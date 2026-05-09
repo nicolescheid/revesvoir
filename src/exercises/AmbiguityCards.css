@@ -1,251 +1,254 @@
-/* === AMBIGUITY CARDS — Deep Dive Exercise === */
+/* ============================================================
+   AMBIGUITY CARDS — Threshold (parchment) theme
+   ============================================================ */
 
 .ambiguity-cards {
   position: fixed;
   inset: 0;
-  z-index: 10;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 24px;
+  z-index: 5;
 }
 
-/* === LOADING === */
-.ac-loading {
-  font-family: var(--font-organic);
-  font-size: 1rem;
-  color: var(--text-tertiary);
-  animation: gentlePulse 2s ease-in-out infinite;
+.ac-card {
+  position: relative;
+  width: min(720px, 92vmin);
+  height: min(720px, 92vmin);
+  border-radius: 14px;
+  background-color: #efe4ce;
+  background-image:
+    radial-gradient(ellipse at 28% 18%, rgba(255, 250, 235, 0.6) 0%, transparent 55%),
+    radial-gradient(ellipse at 80% 90%, rgba(120, 80, 40, 0.08) 0%, transparent 60%);
+  border: 1px solid rgba(40, 28, 16, 0.14);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.5) inset,
+    0 12px 36px rgba(40, 28, 16, 0.18);
+  color: #1a120a;
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: auto 1fr auto auto;
+  padding: 28px clamp(24px, 4vmin, 44px) 24px;
 }
 
-/* === INTRO === */
-.ac-intro {
+/* ── Header (plate · seed) ────────────────────────────── */
+.ac-header {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  max-width: 520px;
-  padding: 2rem;
-  opacity: 0;
-  transition: opacity 2s var(--ease-out-expo);
+  justify-content: space-between;
+  align-items: baseline;
 }
 
-.ac-intro.visible { opacity: 1; }
-
-.ac-intro-title {
-  font-family: var(--font-display);
-  font-size: clamp(1.4rem, 3vw, 2rem);
-  font-weight: 300;
-  letter-spacing: 0.15em;
-  color: var(--text-primary);
-  margin-bottom: 0.4em;
-  text-shadow: 0 0 40px rgba(140, 180, 220, 0.15);
-}
-
-.ac-intro-subtitle {
-  font-family: var(--font-display);
-  font-size: clamp(0.85rem, 1.5vw, 0.95rem);
-  font-weight: 300;
+.ac-meta {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 400;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: var(--text-tertiary);
-  margin-bottom: 2em;
+  color: rgba(40, 28, 16, 0.55);
 }
 
-.ac-intro-body {
-  margin-bottom: 2em;
-}
-
-.ac-intro-line {
-  font-family: var(--font-display);
-  font-size: clamp(0.95rem, 2vw, 1.1rem);
-  font-weight: 300;
-  color: var(--text-secondary);
-  line-height: 2.2;
-  opacity: 0;
-  animation: breatheIn 2s ease forwards;
-}
-
-/* === CARD VIEW === */
-.ac-card-view {
+/* ── Blot area ────────────────────────────────────────── */
+.ac-blot-area {
+  position: relative;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 2rem;
-  padding: 2rem;
+  justify-content: center;
+  min-height: 0;
+  padding: 12px 0;
 }
 
-.ac-card-progress {
-  font-family: var(--font-organic);
-  font-size: 0.9rem;
-  color: var(--text-faint);
-  letter-spacing: 0.1em;
+.ac-blot {
+  width: min(420px, 70%);
+  height: 100%;
+  max-height: 380px;
+  animation: ac-blot-fade 600ms ease-out;
 }
 
-.ac-card-container {
-  width: min(320px, 80vw);
-  max-height: 60vh;
-  opacity: 0;
-  transform: translateY(20px);
-  transition: opacity 1.5s ease, transform 1.5s ease;
-  filter: blur(4px);
+@keyframes ac-blot-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
-.ac-card-container.visible {
-  opacity: 1;
-  transform: translateY(0);
-  filter: blur(0);
-}
+.ac-card[data-stage="rest"] .ac-blot { opacity: 0; }
 
-.ac-card-svg {
-  width: 100%;
-  height: auto;
-  border-radius: 12px;
-  box-shadow:
-    0 8px 40px rgba(0, 0, 0, 0.5),
-    0 0 1px rgba(138, 180, 216, 0.15);
-}
-
-.ac-respond-btn {
-  font-family: var(--font-display);
-  font-size: 0.95rem;
-  font-weight: 400;
-  letter-spacing: 0.12em;
-  color: var(--ice-bright);
-  background: none;
-  border: 1px solid rgba(138, 180, 216, 0.25);
-  padding: 0.8em 2.5em;
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  backdrop-filter: blur(8px);
-  transition: all 0.4s ease;
-  animation: breatheIn 1.5s ease forwards 1s;
-  opacity: 0;
-}
-
-.ac-respond-btn:hover {
-  border-color: var(--ice);
-  background: rgba(138, 180, 216, 0.06);
-  box-shadow: 0 0 30px rgba(138, 180, 216, 0.08);
-}
-
-/* === RESPONSE VIEW === */
-.ac-respond-view {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1.5rem;
-  padding: 2rem;
-  width: 100%;
-  max-width: 500px;
-}
-
-.ac-card-small {
-  width: min(180px, 45vw);
-  opacity: 0.7;
-  transition: opacity 0.5s ease;
-}
-
-.ac-card-small .ac-card-svg {
-  border-radius: 8px;
-}
-
-.ac-respond-area {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
-  width: 100%;
-  animation: breatheIn 1s ease forwards;
-}
-
-.ac-respond-prompt {
-  font-family: var(--font-display);
-  font-size: 1.1rem;
-  font-weight: 300;
-  color: var(--text-secondary);
+.ac-reveal-btn {
+  font-family: 'EB Garamond', Georgia, serif;
   font-style: italic;
+  font-size: 17px;
+  font-weight: 400;
+  color: #1a120a;
+  background: transparent;
+  border: 1px solid rgba(40, 28, 16, 0.45);
+  border-radius: 999px;
+  padding: 14px 32px;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+  letter-spacing: 0.005em;
 }
 
-.ac-respond-input {
-  width: 100%;
-  padding: 1em 1.2em;
-  background: rgba(8, 14, 28, 0.6);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-md);
-  color: var(--text-primary);
-  font-family: var(--font-display);
-  font-size: 1rem;
-  font-weight: 300;
-  line-height: 1.7;
+.ac-reveal-btn:hover {
+  background: rgba(40, 28, 16, 0.04);
+  border-color: rgba(40, 28, 16, 0.65);
+}
+
+.ac-replay {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 28px;
+  height: 28px;
+  border-radius: 14px;
+  border: none;
+  background: transparent;
+  color: rgba(40, 28, 16, 0.55);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.6;
+  transition: opacity 0.15s ease, background 0.15s ease;
+  padding: 0;
+}
+
+.ac-replay:hover {
+  opacity: 1;
+  background: rgba(40, 28, 16, 0.06);
+}
+
+/* ── Prompt area (title + textarea + actions) ─────────── */
+.ac-prompt-area {
+  animation: ac-prompt-rise 500ms ease-out;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+@keyframes ac-prompt-rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.ac-prompt-title {
+  font-family: 'EB Garamond', Georgia, serif;
+  font-style: italic;
+  font-size: 22px;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  line-height: 1.2;
+  margin: 0;
+  color: #1a120a;
+}
+
+.ac-textarea {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.6;
+  color: #1a120a;
+  background: transparent;
+  border: none;
+  border-top: 1px solid rgba(40, 28, 16, 0.14);
+  border-bottom: 1px solid rgba(40, 28, 16, 0.14);
+  border-radius: 0;
+  padding: 14px 0;
   resize: none;
   outline: none;
-  backdrop-filter: blur(10px);
-  transition: border-color 0.4s ease;
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 96px;
 }
 
-.ac-respond-input::placeholder {
-  color: var(--text-faint);
+.ac-textarea::placeholder {
+  color: rgba(40, 28, 16, 0.4);
   font-style: italic;
 }
 
-.ac-respond-input:focus {
-  border-color: rgba(138, 180, 216, 0.3);
+.ac-textarea:focus {
+  border-top-color: rgba(40, 28, 16, 0.3);
+  border-bottom-color: rgba(40, 28, 16, 0.3);
 }
 
-.ac-submit-btn {
-  font-family: var(--font-display);
-  font-size: 0.9rem;
+/* ── Action row ───────────────────────────────────────── */
+.ac-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ac-actions-right {
+  display: flex;
+  gap: 10px;
+}
+
+.ac-discard,
+.ac-new,
+.ac-keep {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 11px;
   font-weight: 400;
-  letter-spacing: 0.12em;
-  color: var(--ice-bright);
-  background: rgba(8, 14, 28, 0.8);
-  border: 1px solid rgba(138, 180, 216, 0.25);
-  padding: 0.7em 2em;
-  border-radius: var(--radius-md);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
   cursor: pointer;
-  backdrop-filter: blur(8px);
-  transition: all 0.4s ease;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
 }
 
-.ac-submit-btn:hover:not(:disabled) {
-  border-color: var(--ice);
-  background: rgba(138, 180, 216, 0.06);
+.ac-discard {
+  background: transparent;
+  border: none;
+  padding: 8px 4px;
+  color: rgba(40, 28, 16, 0.55);
 }
 
-.ac-submit-btn:disabled {
-  opacity: 0.3;
-  cursor: default;
+.ac-discard:hover { color: #1a120a; }
+
+.ac-new {
+  background: transparent;
+  border: 1px solid rgba(40, 28, 16, 0.35);
+  border-radius: 999px;
+  padding: 9px 18px;
+  color: #1a120a;
 }
 
-/* === COMPLETE === */
-.ac-complete {
+.ac-new:hover {
+  background: rgba(40, 28, 16, 0.04);
+  border-color: rgba(40, 28, 16, 0.6);
+}
+
+.ac-keep {
+  background: #1a120a;
+  border: 1px solid #1a120a;
+  border-radius: 999px;
+  padding: 9px 20px;
+  color: #efe4ce;
+}
+
+.ac-keep:hover:not(:disabled) {
+  background: #2a1f12;
+  border-color: #2a1f12;
+}
+
+.ac-keep:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* ── Progress (kept count) ────────────────────────────── */
+.ac-progress {
+  margin-top: 12px;
   text-align: center;
-  animation: breatheIn 2.5s ease forwards;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 10.5px;
+  font-weight: 400;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(40, 28, 16, 0.45);
 }
 
-.ac-complete-text {
-  font-family: var(--font-display);
-  font-size: clamp(1.1rem, 2.5vw, 1.4rem);
-  font-weight: 300;
-  font-style: italic;
-  color: var(--text-primary);
-  margin-bottom: 0.8em;
-}
-
-.ac-complete-sub {
-  font-family: var(--font-display);
-  font-size: clamp(0.9rem, 2vw, 1.05rem);
-  font-weight: 300;
-  color: var(--text-secondary);
-  opacity: 0;
-  animation: breatheIn 2s ease forwards 1.5s;
-}
-
-/* === MOBILE === */
-@media (max-width: 768px) {
-  .ac-card-view { gap: 1.5rem; padding: 1rem; }
-  .ac-card-container { width: min(280px, 85vw); }
-  .ac-respond-view { padding: 1rem; }
-  .ac-card-small { width: min(140px, 40vw); }
-  .ac-respond-input { font-size: 0.95rem; }
+/* ── Reduced motion ───────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .ac-blot,
+  .ac-prompt-area {
+    animation: none;
+  }
 }

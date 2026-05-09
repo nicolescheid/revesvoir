@@ -61,7 +61,7 @@ const INSTRUCTIONS = {
 
 const LINK_DISTANCE = 90; // how close before words snap-link
 
-export default function WordWeaving({ onComplete, audioSystem, round = 1, totalRounds = 1, usedWords = [] }) {
+export default function WordWeaving({ onComplete, audioSystem, round = 1, totalRounds = 1, usedWords = [], prevEmergedWords = [] }) {
   const waterRef = useWater();
   const { session, dispatch, generateEmergentWord } = useSession();
 
@@ -277,8 +277,19 @@ export default function WordWeaving({ onComplete, audioSystem, round = 1, totalR
       const newLink = { from: draggedId, to: nearTarget, emerged: null, fromPos, toPos };
       setLinks(prev => [...prev, newLink]);
 
-      // Generate emergent word from AI
-      const emergentText = await generateEmergentWord(fromWord.text, toWord.text);
+      // Generate emergent word from AI. Pass everything the API must NOT
+      // return: this round's seed words, words already emerged this round,
+      // and emerged words from any prior rounds. Without this list the
+      // worker's "do not repeat" instruction has nothing to hold on to and
+      // collapses onto the same handful of words (threshold, resonance...).
+      const seedWords = wordsRef.current
+        .filter(w => w.isOriginal)
+        .map(w => w.text);
+      const emergedSoFar = wordsRef.current
+        .filter(w => w.isEmerged)
+        .map(w => w.text);
+      const existingWords = [...seedWords, ...emergedSoFar, ...prevEmergedWords];
+      const emergentText = await generateEmergentWord(fromWord.text, toWord.text, existingWords);
 
       const emergeX = (fromWord.x + toWord.x) / 2;
       const emergeY = (fromWord.y + toWord.y) / 2;

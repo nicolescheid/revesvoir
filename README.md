@@ -1,6 +1,6 @@
 # Rêvesvoir
 
-A reflective-writing web app: a sequence of timed exercises followed by an AI-generated synthesis. The name fuses *rêves* (dreams) and *réservoir* — a place where the things your unconscious already knows can collect.
+A reflective-writing web app: a sequence of timed exercises followed by an AI-generated synthesis. The name fuses *rêves* (dreams), "voir" (to see), and *réservoir* — a place where the things your unconscious already knows can collect.
 
 Live at **[revesvoir.com](https://revesvoir.com)**.
 

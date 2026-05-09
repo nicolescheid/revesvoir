@@ -381,103 +381,6 @@ Rules:
 // DEEP DIVE ENDPOINTS (v0.8 — "Go Deeper")
 // ════════════════════════════════════════════════════════
 
-// === /generate-cards — Procedural ambiguity card parameters ===
-// Claude generates abstract visual parameters seeded by the user's patterns.
-// The client renders these into SVG compositions.
-async function handleGenerateCards(request, env) {
-  const { circling, exercises, patterns, synthesis } = await request.json();
-
-  if (!exercises || exercises.length === 0) {
-    return corsResponse(request, { error: 'Need exercise data' }, 400);
-  }
-
-  const systemPrompt = `You are the visual unconscious of Rêvesvoir. You create abstract visual compositions that function as projective instruments — digital Rorschach cards seeded by the person's own patterns.
-
-You DO NOT generate images. You generate PARAMETERS for a procedural SVG generator. Each card is an abstract composition of organic shapes, lines, and textures. The compositions should be genuinely ambiguous — they could be many things. But they lean subtly toward the person's emotional landscape without depicting anything literally.
-
-Generate 5 cards. Each card has:
-- "seed_word": a single word from the person's material that secretly seeds this card (don't make it obvious)
-- "mood": one of "tension", "release", "threshold", "depth", "emergence" 
-- "density": 0.0-1.0 (sparse to dense with forms)
-- "symmetry": 0.0-1.0 (asymmetric to symmetric)
-- "organic": 0.0-1.0 (geometric to highly organic)
-- "vertical_weight": -1.0 to 1.0 (heavy at bottom to heavy at top)
-- "palette": one of "cold", "warm", "mixed", "monochrome", "deep"
-- "forms": array of 3-8 form objects, each with:
-  - "type": "blob", "line", "dot_cluster", "spiral", "crack", "wave", "void", "tendril", "arch", "nest"
-  - "x": 0.0-1.0 (position)
-  - "y": 0.0-1.0 (position)
-  - "scale": 0.2-2.0 (size)
-  - "rotation": 0-360
-  - "opacity": 0.1-1.0
-  - "character": a brief evocative phrase like "reaching upward", "folding inward", "barely holding", "almost touching"
-
-Design principles:
-- Each card should feel different from the others
-- The compositions should be genuinely ambiguous — a person should be able to see different things
-- Lean into the emotional territory of the person's material, but abstractly
-- Avoid literal depiction. A card about loss shouldn't look "sad" — it should have a structural quality (emptiness, asymmetry, weight) that invites projection
-- The "character" descriptions are for the renderer's interpretation, not labels for the user
-- One card should feel distinctly uncomfortable. One should feel peaceful. The others should be ambiguous.
-
-Return ONLY valid JSON: { "cards": [...] }`;
-
-  let userMessage = '';
-
-  if (circling) {
-    userMessage += `STATED CONCERN: "${circling}"\n\n`;
-  }
-
-  if (synthesis) {
-    userMessage += `FIRST SYNTHESIS:\n`;
-    userMessage += `Question: ${synthesis.question}\n`;
-    userMessage += `Answer: ${synthesis.answer}\n\n`;
-  }
-
-  userMessage += 'EXERCISE DATA:\n';
-  for (const ex of exercises) {
-    if (ex.data?.emergedWords) {
-      userMessage += `Emerged words: ${ex.data.emergedWords.join(', ')}\n`;
-    }
-    if (ex.data?.piles) {
-      userMessage += 'Groupings:\n';
-      ex.data.piles.forEach((p, i) => {
-        userMessage += `  Group ${i + 1}: [${p.words.join(', ')}]\n`;
-      });
-    }
-    if (ex.data?.text) {
-      userMessage += `Writing excerpt: "${ex.data.text.slice(0, 500)}"\n`;
-    }
-  }
-
-  if (patterns) {
-    userMessage += `\nPATTERNS:\n`;
-    if (patterns.themes?.length) userMessage += `Themes: ${patterns.themes.join(', ')}\n`;
-    if (patterns.emotionalValence) userMessage += `Emotional direction: ${patterns.emotionalValence}\n`;
-    if (patterns.tension) userMessage += `Tension: ${patterns.tension}\n`;
-  }
-
-  userMessage += '\nGenerate 5 ambiguity cards. Return ONLY valid JSON.';
-
-  try {
-    const raw = await callClaude(env, systemPrompt, userMessage, 2500);
-    let cleaned = raw.trim();
-    if (cleaned.startsWith('```')) {
-      cleaned = cleaned.replace(/^```(?:json)?\s*/, '').replace(/\s*```$/, '');
-    }
-    const parsed = JSON.parse(cleaned);
-
-    if (!parsed.cards || !Array.isArray(parsed.cards)) {
-      throw new Error('Invalid cards response');
-    }
-
-    return corsResponse(request, { cards: parsed.cards });
-  } catch (err) {
-    return corsResponse(request, { error: err.message }, 500);
-  }
-}
-
-
 // === /sentence-stems — Generate sentence completion stems ===
 async function handleSentenceStems(request, env) {
   const { circling, exercises, patterns, synthesis } = await request.json();
@@ -869,8 +772,6 @@ export default {
             return await handleSynthesize(request, env);
 
           // v0.8 deep dive
-          case '/generate-cards':
-            return await handleGenerateCards(request, env);
           case '/sentence-stems':
             return await handleSentenceStems(request, env);
           case '/deep-synthesize':

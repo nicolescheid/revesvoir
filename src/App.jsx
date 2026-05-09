@@ -254,6 +254,7 @@ function AppInner() {
           round={weavingRound}
           totalRounds={TOTAL_WEAVING_ROUNDS}
           usedWords={usedSeedWords}
+          prevEmergedWords={emergedWords}
         />
       )}
 

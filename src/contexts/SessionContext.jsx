@@ -251,8 +251,12 @@ export function SessionProvider({ children }) {
     return fallbacks[Math.floor(Math.random() * fallbacks.length)];
   }, []);
 
-  // Generate words for Exercise One
-  const generateEmergentWord = useCallback(async (wordA, wordB) => {
+  // Generate words for Exercise One.
+  // Caller passes existingWords — every word the API must NOT return: the seed
+  // pair, the rest of this round's seeds, and any word already emerged this
+  // session (across rounds). Empty list breaks the worker's "do not repeat"
+  // instruction and produces the threshold/resonance/etc. clustering.
+  const generateEmergentWord = useCallback(async (wordA, wordB, existingWords = []) => {
     try {
       const response = await fetch(`${API_URL}/emerge`, {
         method: 'POST',
@@ -261,7 +265,7 @@ export function SessionProvider({ children }) {
           wordA,
           wordB,
           circling: sessionRef.current.circling,
-          existingWords: sessionRef.current.currentExercise?.state?.words || [],
+          existingWords,
         }),
       });
 
@@ -272,8 +276,7 @@ export function SessionProvider({ children }) {
     } catch (err) {
       console.log('Emerge API unavailable:', err);
     }
-    // Fallback: combine the words in an evocative way
-    return fallbackEmerge(wordA, wordB);
+    return fallbackEmerge(wordA, wordB, existingWords);
   }, []);
 
   // Deep synthesis — second pass after "go deeper" exercises
@@ -332,14 +335,27 @@ function generateId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 }
 
-function fallbackEmerge(wordA, wordB) {
-  // Simple but evocative fallback: blend the words
-  const evocative = [
-    'threshold', 'undertow', 'resonance', 'permission', 'becoming',
-    'erosion', 'longing', 'clarity', 'gravity', 'emergence',
-    'wildness', 'surrender', 'recognition', 'departure', 'anchor',
-    'undercurrent', 'refusal', 'devotion', 'silence', 'vertigo',
-    'origin', 'dissolve', 'inheritance', 'fracture', 'convergence',
-  ];
-  return evocative[Math.floor(Math.random() * evocative.length)];
+// Used only when the /emerge API is unreachable. The API is the primary
+// path; this list just keeps the exercise functional offline.
+const FALLBACK_EVOCATIVE = [
+  'threshold', 'undertow', 'resonance', 'permission', 'becoming',
+  'erosion', 'longing', 'clarity', 'gravity', 'emergence',
+  'wildness', 'surrender', 'recognition', 'departure', 'anchor',
+  'undercurrent', 'refusal', 'devotion', 'silence', 'vertigo',
+  'origin', 'dissolve', 'inheritance', 'fracture', 'convergence',
+  'tether', 'reckoning', 'kinship', 'undertone', 'crossing',
+  'remnant', 'translation', 'aperture', 'inheritance', 'gathering',
+  'witness', 'rupture', 'invitation', 'communion', 'shelter',
+  'reverberation', 'echo', 'descent', 'ascent', 'glance',
+  'unfolding', 'consent', 'remembering', 'rehearsal', 'tending',
+  'mending', 'attention', 'pause', 'permission', 'kindling',
+];
+
+function fallbackEmerge(wordA, wordB, existingWords = []) {
+  const taken = new Set([wordA, wordB, ...existingWords].map(w => w?.toLowerCase()));
+  const pool = FALLBACK_EVOCATIVE.filter(w => !taken.has(w));
+  // If somehow the user has emerged through every fallback word, fall back
+  // to the full list rather than returning undefined.
+  const choices = pool.length > 0 ? pool : FALLBACK_EVOCATIVE;
+  return choices[Math.floor(Math.random() * choices.length)];
 }

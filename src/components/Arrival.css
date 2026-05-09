@@ -1,0 +1,136 @@
+/* === ARRIVAL / CINEMA SEQUENCE === */
+
+.arrival {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+}
+
+.cinema {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Each beat: centered, flex column */
+.cinema-beat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5em;
+  text-align: center;
+  padding: 0 2rem;
+}
+
+/* === PHASE ANIMATIONS === */
+
+/* Rising in */
+.cinema-beat.rising {
+  animation: cinemaRise 2.5s ease forwards;
+}
+
+/* Fully visible */
+.cinema-beat.visible {
+  opacity: 1;
+}
+
+/* Fading out */
+.cinema-beat.fading {
+  animation: cinemaFade 1.2s ease forwards;
+}
+
+/* Hidden */
+.cinema-beat.hidden {
+  opacity: 0;
+}
+
+@keyframes cinemaRise {
+  0% { opacity: 0; transform: translateY(20px); filter: blur(3px); }
+  40% { filter: blur(0); }
+  100% { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+
+@keyframes cinemaFade {
+  0% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-8px); }
+}
+
+/* === TEXT STYLES === */
+
+.cinema-word {
+  font-family: var(--font-display);
+  font-size: clamp(2.4rem, 5.5vw, 4rem);
+  font-weight: 300;
+  font-style: italic;
+  letter-spacing: 0.12em;
+  color: var(--text-primary);
+  text-shadow: 0 0 40px rgba(140, 180, 220, 0.15);
+}
+
+.cinema-meaning {
+  font-family: var(--font-display);
+  font-size: clamp(1rem, 2vw, 1.2rem);
+  font-weight: 300;
+  letter-spacing: 0.08em;
+  color: rgba(160, 185, 220, 0.85);
+}
+
+.cinema-title {
+  font-family: var(--font-display);
+  font-size: clamp(3rem, 7vw, 5.5rem);
+  font-weight: 300;
+  letter-spacing: 0.2em;
+  color: var(--text-primary);
+  text-shadow: 0 0 60px rgba(140, 180, 220, 0.2);
+}
+
+.cinema-tagline {
+  font-family: var(--font-display);
+  font-size: clamp(1.15rem, 2.5vw, 1.45rem);
+  font-weight: 300;
+  font-style: italic;
+  color: var(--text-primary);
+}
+
+.cinema-tagline-sub {
+  font-family: var(--font-display);
+  font-size: clamp(0.92rem, 2vw, 1.08rem);
+  font-weight: 300;
+  color: rgba(170, 195, 225, 0.8);
+  margin-top: 0.3em;
+}
+
+.cinema-invitation {
+  font-family: var(--font-display);
+  font-size: clamp(0.95rem, 2vw, 1.1rem);
+  font-weight: 300;
+  color: rgba(185, 205, 230, 0.88);
+  line-height: 2.1;
+}
+
+.arrival-enter {
+  display: inline-block;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 400;
+  letter-spacing: 0.2em;
+  color: var(--ice-bright);
+  background: none;
+  border: 1px solid rgba(138, 180, 216, 0.3);
+  padding: 1em 3em;
+  cursor: pointer;
+  transition: all 0.8s ease;
+}
+
+.arrival-enter:hover {
+  border-color: var(--ice);
+  background: rgba(138, 180, 216, 0.06);
+  box-shadow: 0 0 50px rgba(138, 180, 216, 0.1);
+}

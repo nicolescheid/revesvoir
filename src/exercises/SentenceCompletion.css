@@ -1,0 +1,205 @@
+/* === SENTENCE COMPLETION — Deep Dive Exercise === */
+
+.sentence-completion {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* === LOADING === */
+.sc-loading {
+  font-family: var(--font-organic);
+  font-size: 1rem;
+  color: var(--text-tertiary);
+  animation: gentlePulse 2s ease-in-out infinite;
+}
+
+/* === INTRO === */
+.sc-intro {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  max-width: 520px;
+  padding: 2rem;
+  opacity: 0;
+  transition: opacity 2s var(--ease-out-expo);
+}
+
+.sc-intro.visible { opacity: 1; }
+
+.sc-intro-title {
+  font-family: var(--font-display);
+  font-size: clamp(1.4rem, 3vw, 2rem);
+  font-weight: 300;
+  letter-spacing: 0.15em;
+  color: var(--text-primary);
+  margin-bottom: 0.4em;
+}
+
+.sc-intro-subtitle {
+  font-family: var(--font-display);
+  font-size: clamp(0.85rem, 1.5vw, 0.95rem);
+  font-weight: 300;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  margin-bottom: 2em;
+}
+
+.sc-intro-body { margin-bottom: 2em; }
+
+.sc-intro-line {
+  font-family: var(--font-display);
+  font-size: clamp(0.95rem, 2vw, 1.1rem);
+  font-weight: 300;
+  color: var(--text-secondary);
+  line-height: 2.2;
+  opacity: 0;
+  animation: breatheIn 2s ease forwards;
+}
+
+/* === COMPLETING === */
+.sc-completing {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 600px;
+  padding: 2rem;
+  gap: 2rem;
+}
+
+.sc-progress-bar {
+  width: 100%;
+  max-width: 300px;
+  height: 2px;
+  background: rgba(138, 180, 216, 0.1);
+  border-radius: 1px;
+  overflow: hidden;
+}
+
+.sc-progress-fill {
+  height: 100%;
+  background: rgba(138, 180, 216, 0.4);
+  transition: width 0.5s ease;
+  border-radius: 1px;
+}
+
+.sc-stem-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  width: 100%;
+}
+
+.sc-stem {
+  font-family: var(--font-display);
+  font-size: clamp(1.1rem, 2.5vw, 1.35rem);
+  font-weight: 300;
+  font-style: italic;
+  color: var(--ember-soft);
+  text-align: center;
+  line-height: 1.8;
+  min-height: 2.5em;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+.sc-stem.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.sc-input {
+  width: 100%;
+  padding: 0.8em 1.2em;
+  background: rgba(8, 14, 28, 0.6);
+  border: none;
+  border-bottom: 1px solid rgba(138, 180, 216, 0.2);
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  font-size: clamp(1rem, 2vw, 1.15rem);
+  font-weight: 300;
+  text-align: center;
+  outline: none;
+  transition: border-color 0.4s ease;
+}
+
+.sc-input::placeholder {
+  color: var(--text-faint);
+}
+
+.sc-input:focus {
+  border-color: rgba(138, 180, 216, 0.4);
+}
+
+.sc-next-btn {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 300;
+  color: var(--ice-bright);
+  background: none;
+  border: 1px solid rgba(138, 180, 216, 0.2);
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.4s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sc-next-btn:hover:not(:disabled) {
+  border-color: var(--ice);
+  background: rgba(138, 180, 216, 0.06);
+  box-shadow: 0 0 20px rgba(138, 180, 216, 0.08);
+}
+
+.sc-next-btn:disabled {
+  opacity: 0.2;
+  cursor: default;
+}
+
+.sc-counter {
+  font-family: var(--font-organic);
+  font-size: 0.85rem;
+  color: var(--text-faint);
+}
+
+/* === COMPLETE === */
+.sc-complete {
+  text-align: center;
+  animation: breatheIn 2.5s ease forwards;
+}
+
+.sc-complete-text {
+  font-family: var(--font-display);
+  font-size: clamp(1.1rem, 2.5vw, 1.4rem);
+  font-weight: 300;
+  font-style: italic;
+  color: var(--text-primary);
+  margin-bottom: 0.8em;
+}
+
+.sc-complete-sub {
+  font-family: var(--font-display);
+  font-size: clamp(0.9rem, 2vw, 1.05rem);
+  font-weight: 300;
+  color: var(--text-secondary);
+  opacity: 0;
+  animation: breatheIn 2s ease forwards 1.5s;
+}
+
+/* === MOBILE === */
+@media (max-width: 768px) {
+  .sc-completing { padding: 1rem; }
+  .sc-stem { font-size: clamp(1rem, 2.5vw, 1.2rem); }
+  .sc-input { font-size: 1rem; }
+}

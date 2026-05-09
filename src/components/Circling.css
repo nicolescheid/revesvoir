@@ -1,0 +1,175 @@
+/* === CIRCLING — Entry Question === */
+
+.circling {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 2s var(--ease-out-expo);
+}
+
+.circling.visible {
+  opacity: 1;
+}
+
+.circling-content {
+  text-align: center;
+  max-width: 600px;
+  padding: 2rem;
+  animation: breatheIn 2.5s ease forwards;
+}
+
+.circling-question {
+  font-family: var(--font-display);
+  font-size: clamp(1.3rem, 3vw, 1.7rem);
+  font-weight: 300;
+  font-style: italic;
+  color: var(--text-primary);
+  line-height: 1.8;
+  margin-bottom: 0.8em;
+}
+
+.circling-sub {
+  font-family: var(--font-display);
+  font-size: clamp(0.9rem, 2vw, 1.05rem);
+  font-weight: 300;
+  color: var(--text-secondary);
+  line-height: 1.9;
+  margin-bottom: 2.5em;
+}
+
+.circling-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8em;
+  align-items: center;
+}
+
+.circling-btn {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 400;
+  letter-spacing: 0.1em;
+  color: var(--text-secondary);
+  background: none;
+  border: 1px solid var(--glass-border);
+  padding: 0.9em 2.5em;
+  cursor: pointer;
+  transition: all 0.6s ease;
+  min-width: 280px;
+}
+
+.circling-btn:hover {
+  border-color: var(--glass-border-hover);
+  color: var(--text-primary);
+  background: rgba(138, 180, 216, 0.04);
+}
+
+.circling-btn.primary {
+  color: var(--ice-bright);
+  border-color: rgba(138, 180, 216, 0.25);
+}
+
+.circling-btn.primary:hover {
+  border-color: var(--ice);
+  box-shadow: 0 0 40px rgba(138, 180, 216, 0.08);
+}
+
+.circling-prompt {
+  font-family: var(--font-display);
+  font-size: clamp(1.15rem, 2.5vw, 1.4rem);
+  font-weight: 300;
+  font-style: italic;
+  color: var(--text-primary);
+  margin-bottom: 1.5em;
+  animation: breatheIn 1.5s ease forwards;
+}
+
+.circling-textarea {
+  width: 100%;
+  min-height: 110px;
+  padding: 1.4em 1.6em;
+  background: rgba(8, 14, 28, 0.8);
+  border: 1px solid rgba(138, 180, 216, 0.2);
+  border-radius: var(--radius-lg);
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 300;
+  line-height: 1.7;
+  resize: none;
+  outline: none;
+  text-align: center;
+  transition: border-color 0.6s ease, box-shadow 0.6s ease;
+  backdrop-filter: blur(10px);
+}
+
+.circling-textarea::placeholder {
+  color: var(--text-tertiary);
+  font-style: italic;
+}
+
+.circling-textarea:focus {
+  border-color: rgba(138, 180, 216, 0.4);
+  box-shadow: 0 0 60px rgba(138, 180, 216, 0.08);
+}
+
+.circling-hint {
+  font-family: var(--font-organic);
+  font-size: 0.95rem;
+  color: var(--text-tertiary);
+  margin-top: 1em;
+}
+
+.circling-submit {
+  display: inline-block;
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 400;
+  letter-spacing: 0.15em;
+  color: var(--ice-bright);
+  background: none;
+  border: 1px solid rgba(138, 180, 216, 0.25);
+  padding: 0.8em 2.5em;
+  margin-top: 1.8em;
+  cursor: pointer;
+  transition: all 0.6s ease;
+}
+
+.circling-submit:hover:not(:disabled) {
+  border-color: var(--ice);
+  background: rgba(138, 180, 216, 0.06);
+}
+
+.circling-submit:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.circling-finding {
+  font-family: var(--font-display);
+  font-size: clamp(1.2rem, 2.5vw, 1.5rem);
+  font-weight: 300;
+  font-style: italic;
+  color: var(--text-primary);
+  margin-bottom: 0.8em;
+  animation: breatheIn 2s ease forwards;
+}
+
+.circling-finding-sub {
+  font-family: var(--font-display);
+  font-size: clamp(0.92rem, 2vw, 1.05rem);
+  font-weight: 300;
+  color: var(--text-secondary);
+  line-height: 2;
+  opacity: 0;
+  animation: breatheIn 2s ease forwards 1s;
+}
+
+@media (max-width: 768px) {
+  .circling-content { padding: 1.5rem; }
+  .circling-btn { min-width: 240px; font-size: 0.88rem; padding: 0.8em 1.8em; }
+}

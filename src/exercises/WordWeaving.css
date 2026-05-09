@@ -1,0 +1,246 @@
+/* === WORD WEAVING — Exercise One === */
+
+.word-weaving {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+}
+
+/* === INTRO === */
+.ww-intro {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+  opacity: 0;
+  transition: opacity 2s var(--ease-out-expo);
+  pointer-events: none;
+  padding: 2rem;
+}
+
+.ww-intro.visible { opacity: 1; pointer-events: auto; }
+.ww-intro.dissolving { animation: introDissolve 2s ease forwards; pointer-events: none; }
+
+@keyframes introDissolve {
+  0% { opacity: 1; }
+  100% { opacity: 0; filter: blur(4px); }
+}
+
+.ww-intro-title {
+  font-family: var(--font-display);
+  font-size: clamp(1.4rem, 3vw, 2rem);
+  font-weight: 300;
+  letter-spacing: 0.15em;
+  color: var(--text-primary);
+  margin-bottom: 0.3em;
+  text-shadow: 0 0 40px rgba(140, 180, 220, 0.15);
+}
+
+.ww-intro-subtitle {
+  font-family: var(--font-display);
+  font-size: clamp(0.85rem, 1.5vw, 0.95rem);
+  font-weight: 300;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  margin-bottom: 2em;
+}
+
+.ww-intro-rounds {
+  font-family: var(--font-organic);
+  font-size: 0.9rem;
+  color: var(--text-faint);
+  margin-top: 1.5em;
+  opacity: 0;
+  animation: breatheIn 2s ease forwards 3s;
+}
+
+.ww-intro-body {
+  max-width: 480px;
+  text-align: center;
+}
+
+.ww-intro-line {
+  font-family: var(--font-display);
+  font-size: clamp(0.95rem, 2vw, 1.1rem);
+  font-weight: 300;
+  color: var(--text-secondary);
+  line-height: 2;
+  opacity: 0;
+  animation: breatheIn 1.5s ease forwards;
+}
+
+/* === WORDS === */
+.ww-word {
+  position: absolute;
+  padding: 0.6em 1.2em;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  border-radius: var(--radius-md);
+  cursor: default;
+  user-select: none;
+  z-index: 10;
+  opacity: 0;
+  animation: riseFromDepth 2s ease forwards, bob 5s ease-in-out infinite;
+  backdrop-filter: blur(6px);
+  transition: opacity 1.5s ease, border-color 0.3s ease, box-shadow 0.3s ease, transform 0.2s ease;
+  touch-action: none;
+}
+
+.ww-word.original {
+  color: var(--text-primary);
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 4px 24px rgba(5, 10, 20, 0.35), 0 0 1px rgba(138, 180, 216, 0.1);
+}
+
+.ww-word.original.linkable { cursor: grab; }
+
+.ww-word.original.linkable:hover {
+  border-color: var(--glass-border-active);
+  box-shadow: 0 4px 30px rgba(5, 10, 20, 0.4), 0 0 20px rgba(138, 180, 216, 0.1);
+  transform: translateY(-2px) scale(1.02);
+}
+
+/* Currently being dragged */
+.ww-word.original.dragging {
+  z-index: 50 !important;
+  transform: scale(1.08) !important;
+  border-color: var(--ice);
+  box-shadow: 0 8px 40px rgba(5, 10, 20, 0.5), 0 0 30px rgba(138, 180, 216, 0.12);
+  cursor: grabbing;
+  transition: transform 0.05s ease, box-shadow 0.2s ease;
+}
+
+/* Near target — glowing invitation */
+.ww-word.original.near-target {
+  border-color: var(--ice) !important;
+  box-shadow: 0 0 40px rgba(138, 180, 216, 0.2), 0 0 15px rgba(138, 180, 216, 0.1) !important;
+  transform: scale(1.06) !important;
+  transition: all 0.15s ease;
+}
+
+.ww-word.original.fading {
+  opacity: 0.08 !important;
+  pointer-events: none;
+  transform: scale(0.95);
+  filter: blur(1px);
+  transition: opacity 2s ease, transform 2s ease, filter 2s ease;
+}
+
+.ww-word.emerged {
+  color: var(--ember-bright);
+  background: rgba(12, 16, 26, 0.85);
+  border: 1px solid var(--ember-faint);
+  box-shadow: 0 4px 30px rgba(5, 10, 20, 0.4), 0 0 25px rgba(201, 168, 76, 0.06);
+  cursor: default;
+  animation: surfaceFromWater 2.5s ease forwards, bob 6s ease-in-out infinite;
+  font-style: italic;
+}
+
+.ww-word.emerged.ghostly {
+  opacity: 0.35 !important;
+  filter: blur(0.5px);
+  pointer-events: none;
+}
+
+.ww-word.emerged.solidifying {
+  opacity: 1 !important;
+  filter: blur(0) !important;
+  animation: solidify 2s ease forwards, bob 6s ease-in-out infinite;
+}
+
+@keyframes solidify {
+  0% { opacity: 0.35; filter: blur(0.5px); transform: scale(0.98); }
+  50% { opacity: 0.8; }
+  100% {
+    opacity: 1; filter: blur(0); transform: scale(1);
+    box-shadow: 0 4px 30px rgba(5, 10, 20, 0.4), 0 0 35px rgba(201, 168, 76, 0.1);
+    border-color: rgba(201, 168, 76, 0.3);
+  }
+}
+
+/* === STRINGS === */
+.ww-string-glow, .ww-string-line {
+  opacity: 0;
+  animation: stringAppear 2s ease forwards;
+}
+.ww-string-line { animation-delay: 0.3s; }
+@keyframes stringAppear { from { opacity: 0; } to { opacity: 1; } }
+
+.word-weaving.revealing .ww-string-glow,
+.word-weaving.revealing .ww-string-line,
+.word-weaving.complete .ww-string-glow,
+.word-weaving.complete .ww-string-line {
+  opacity: 0.3;
+  transition: opacity 2s ease;
+}
+
+.ww-active-string { animation: gentlePulse 1s ease-in-out infinite; }
+
+/* === GENERATING === */
+.ww-generating {
+  position: fixed;
+  bottom: 3rem;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-organic);
+  font-size: 1rem;
+  color: var(--ember-soft);
+  animation: gentlePulse 2s ease-in-out infinite;
+  z-index: 15;
+}
+
+/* === PROGRESS === */
+.ww-progress {
+  position: fixed;
+  top: 1.8rem;
+  right: 2.2rem;
+  font-family: var(--font-organic);
+  font-size: 0.95rem;
+  color: var(--text-tertiary);
+  z-index: 15;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.3em;
+}
+
+.ww-round {
+  font-size: 0.8rem;
+  color: var(--text-faint);
+  letter-spacing: 0.05em;
+}
+
+/* === COMPLETION === */
+.ww-complete {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+  pointer-events: none;
+}
+
+.ww-complete-text {
+  font-family: var(--font-display);
+  font-size: clamp(1.1rem, 2.5vw, 1.4rem);
+  font-weight: 300;
+  font-style: italic;
+  color: var(--text-secondary);
+  text-align: center;
+  animation: breatheIn 2.5s ease forwards;
+  text-shadow: 0 0 30px rgba(8, 16, 32, 0.8);
+}
+
+/* === MOBILE === */
+@media (max-width: 768px) {
+  .ww-word { font-size: 0.92rem; padding: 0.5em 1em; }
+  .ww-progress { top: auto; bottom: 4rem; right: 1.2rem; font-size: 0.85rem; }
+}

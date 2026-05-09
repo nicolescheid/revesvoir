@@ -1,0 +1,295 @@
+/* ============================================================
+   REVESVOIR — Design System
+   The Deep Blue palette with warm ember accents for AI voice
+   ============================================================ */
+
+/* === RESET === */
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  /* === THE DEEP BLUE PALETTE === */
+  --deep: #050a14;
+  --deep-water: #081020;
+  --water-mid: #0c1628;
+  --water-surface: #101d32;
+
+  --muted-blue: #1a2e4a;
+  --tidal-blue: #1e3a5c;
+  --slate-blue: #2a4a6e;
+
+  /* Text hierarchy — all blues/silvers/whites, high contrast */
+  --text-primary: rgba(235, 240, 248, 0.98);    /* headings, titles */
+  --text-body: rgba(200, 215, 235, 0.92);        /* readable body text */
+  --text-secondary: rgba(170, 195, 225, 0.8);    /* subtitles, descriptions */
+  --text-tertiary: rgba(140, 170, 210, 0.72);    /* hints, meta, labels */
+  --text-faint: rgba(130, 160, 200, 0.45);       /* watermarks, very subtle */
+
+  /* Ice — interactive accent */
+  --ice: #8ab4d8;
+  --ice-bright: #a4cce8;
+  --ice-glow: rgba(138, 180, 216, 0.3);
+  --ice-faint: rgba(138, 180, 216, 0.08);
+
+  /* Ember — RESERVED for AI/semantic/observation elements */
+  --ember: #c9a84c;
+  --ember-bright: #e0c060;
+  --ember-soft: rgba(201, 168, 76, 0.7);
+  --ember-faint: rgba(201, 168, 76, 0.15);
+  --ember-glow: rgba(201, 168, 76, 0.06);
+
+  /* Surfaces */
+  --glass: rgba(10, 16, 32, 0.78);
+  --glass-light: rgba(16, 24, 42, 0.65);
+  --glass-heavy: rgba(8, 12, 24, 0.92);
+  --glass-border: rgba(140, 180, 216, 0.15);
+  --glass-border-hover: rgba(140, 180, 216, 0.3);
+  --glass-border-active: rgba(138, 180, 216, 0.45);
+
+  /* Feedback colors */
+  --success: rgba(120, 200, 160, 0.8);
+  --warning: rgba(220, 180, 100, 0.8);
+  --danger: rgba(220, 130, 130, 0.8);
+
+  /* Spacing scale */
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2.5rem;
+  --space-2xl: 4rem;
+
+  /* Typography */
+  --font-display: 'Cormorant Garamond', 'Georgia', serif;
+  --font-organic: 'Caveat', cursive;
+  --font-mono: 'SF Mono', 'Fira Code', monospace;
+
+  /* Timing */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out-quart: cubic-bezier(0.76, 0, 0.24, 1);
+  --duration-fast: 200ms;
+  --duration-normal: 400ms;
+  --duration-slow: 800ms;
+  --duration-glacial: 2000ms;
+
+  /* Radius */
+  --radius-sm: 6px;
+  --radius-md: 11px;
+  --radius-lg: 16px;
+  --radius-xl: 22px;
+}
+
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--deep);
+  color: var(--text-body);
+  font-family: var(--font-display);
+  cursor: default;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* === ACCESSIBILITY === */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+:focus-visible {
+  outline: 2px solid var(--ice);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* === SELECTION === */
+::selection {
+  background: rgba(138, 180, 216, 0.2);
+  color: var(--text-primary);
+}
+
+/* === SCROLLBAR === */
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(138, 180, 216, 0.2); border-radius: 2px; }
+
+/* === SHARED ANIMATIONS === */
+@keyframes breatheIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes riseFromDepth {
+  0% { opacity: 0; transform: scale(0.85) translateY(30px); filter: blur(4px); }
+  60% { opacity: 0.7; filter: blur(1px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); filter: blur(0); }
+}
+
+@keyframes surfaceFromWater {
+  0% { opacity: 0; transform: translateY(40px) scale(0.92); filter: blur(6px); }
+  30% { filter: blur(2px); }
+  60% { opacity: 0.8; filter: blur(0); }
+  100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+
+@keyframes gentlePulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(var(--bob-y, -3px)); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/* ============================================================
+   SHARED EXERCISE COMPONENTS
+   "I'm ready" button, instructions toggle, instructions overlay
+   ============================================================ */
+
+/* "I'm ready" button — appears at bottom of every exercise intro */
+.exercise-ready-btn {
+  display: inline-block;
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 400;
+  letter-spacing: 0.15em;
+  color: var(--ice-bright);
+  background: none;
+  border: 1px solid rgba(138, 180, 216, 0.25);
+  padding: 0.9em 2.8em;
+  margin-top: 2.5em;
+  cursor: pointer;
+  transition: all 0.6s ease;
+  opacity: 0;
+  animation: breatheIn 1.5s ease forwards 3.5s;
+}
+
+.exercise-ready-btn:hover {
+  border-color: var(--ice);
+  background: rgba(138, 180, 216, 0.06);
+  box-shadow: 0 0 40px rgba(138, 180, 216, 0.08);
+}
+
+/* Instructions "?" toggle — bottom-left, unobtrusive */
+.instructions-toggle {
+  position: fixed;
+  bottom: 1.8rem;
+  left: 2.2rem;
+  z-index: 80;
+  width: 32px;
+  height: 32px;
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 400;
+  color: var(--text-tertiary);
+  background: rgba(8, 14, 28, 0.6);
+  border: 1px solid var(--glass-border);
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(6px);
+  transition: all 0.3s ease;
+  opacity: 0.5;
+}
+
+.instructions-toggle:hover {
+  opacity: 1;
+  border-color: var(--glass-border-hover);
+  background: rgba(8, 14, 28, 0.8);
+}
+
+/* Instructions overlay — frosted glass panel */
+.instructions-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(5, 10, 20, 0.5);
+  backdrop-filter: blur(4px);
+  animation: fadeIn 0.4s ease forwards;
+}
+
+.instructions-panel {
+  max-width: 440px;
+  width: 90%;
+  padding: 2.5em 2em;
+  background: var(--glass-heavy);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xl);
+  backdrop-filter: blur(12px);
+  text-align: center;
+  animation: riseFromDepth 0.6s ease forwards;
+}
+
+.instructions-panel-title {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 300;
+  letter-spacing: 0.12em;
+  color: var(--text-primary);
+  margin-bottom: 1.5em;
+}
+
+.instructions-panel-line {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 300;
+  color: var(--text-secondary);
+  line-height: 2;
+  margin-bottom: 0.3em;
+}
+
+.instructions-close {
+  display: inline-block;
+  font-family: var(--font-display);
+  font-size: 0.88rem;
+  font-weight: 400;
+  letter-spacing: 0.1em;
+  color: var(--ice-bright);
+  background: none;
+  border: 1px solid rgba(138, 180, 216, 0.2);
+  padding: 0.6em 2em;
+  margin-top: 1.8em;
+  cursor: pointer;
+  transition: all 0.4s ease;
+  border-radius: var(--radius-sm);
+}
+
+.instructions-close:hover {
+  border-color: var(--ice);
+  background: rgba(138, 180, 216, 0.06);
+}
+
+@keyframes introDissolve {
+  0% { opacity: 1; }
+  100% { opacity: 0; filter: blur(4px); }
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .exercise-ready-btn { font-size: 0.9rem; padding: 0.8em 2em; }
+  .instructions-toggle { bottom: 1rem; left: 1rem; width: 28px; height: 28px; font-size: 0.78rem; }
+  .instructions-panel { padding: 2em 1.5em; }
+}

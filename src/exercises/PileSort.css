@@ -1,0 +1,177 @@
+/* === PILE SORT — Exercise Two === */
+
+.pile-sort {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+}
+
+/* === INTRO === */
+.ps-intro {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+  opacity: 0;
+  transition: opacity 2s var(--ease-out-expo);
+  pointer-events: none;
+  padding: 2rem;
+}
+
+.ps-intro.visible { opacity: 1; pointer-events: auto; }
+.ps-intro.dissolving { animation: introDissolve 2s ease forwards; pointer-events: none; }
+
+.ps-intro-title {
+  font-family: var(--font-display);
+  font-size: clamp(1.4rem, 3vw, 2rem);
+  font-weight: 300;
+  letter-spacing: 0.15em;
+  color: var(--text-primary);
+  margin-bottom: 0.3em;
+}
+
+.ps-intro-subtitle {
+  font-family: var(--font-display);
+  font-size: clamp(0.85rem, 1.5vw, 0.95rem);
+  font-weight: 300;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  margin-bottom: 2em;
+}
+
+.ps-intro-body { max-width: 480px; text-align: center; }
+
+.ps-intro-line {
+  font-family: var(--font-display);
+  font-size: clamp(0.95rem, 2vw, 1.1rem);
+  font-weight: 300;
+  color: var(--text-secondary);
+  line-height: 2;
+  opacity: 0;
+  animation: breatheIn 1.5s ease forwards;
+}
+
+/* === WORDS === */
+.ps-word {
+  position: absolute;
+  padding: 0.6em 1.2em;
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 400;
+  font-style: italic;
+  letter-spacing: 0.04em;
+  color: var(--ember-bright);
+  background: rgba(12, 16, 26, 0.85);
+  border: 1px solid var(--ember-faint);
+  border-radius: var(--radius-md);
+  cursor: grab;
+  user-select: none;
+  z-index: 10;
+  opacity: 0;
+  animation: riseFromDepth 1.5s ease forwards;
+  backdrop-filter: blur(6px);
+  box-shadow: 0 4px 24px rgba(5, 10, 20, 0.35), 0 0 20px rgba(201, 168, 76, 0.04);
+  transition: transform 0.15s ease, box-shadow 0.3s ease;
+  touch-action: none;
+}
+
+.ps-word:hover { transform: translateY(-2px); }
+
+.ps-word.dragging {
+  cursor: grabbing;
+  transform: scale(1.08);
+  box-shadow: 0 8px 40px rgba(5, 10, 20, 0.5), 0 0 35px rgba(201, 168, 76, 0.1);
+}
+
+.ps-word.piled { border-color: rgba(201, 168, 76, 0.25); }
+
+/* === PILE ZONE === */
+.ps-pile-zone {
+  position: absolute;
+  width: 80px;
+  height: 60px;
+  border: 1px dashed rgba(138, 180, 216, 0.12);
+  border-radius: var(--radius-lg);
+  pointer-events: none;
+  z-index: 2;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 0.3em;
+}
+
+.ps-pile-count {
+  font-family: var(--font-organic);
+  font-size: 0.8rem;
+  color: var(--text-faint);
+}
+
+/* === DONE === */
+.ps-done-area {
+  position: fixed;
+  bottom: 2.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+  text-align: center;
+  animation: breatheIn 1.5s ease forwards;
+}
+
+.ps-done-btn {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  color: var(--ice-bright);
+  background: rgba(8, 14, 28, 0.8);
+  border: 1px solid rgba(138, 180, 216, 0.25);
+  padding: 0.8em 2.5em;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  transition: all 0.4s ease;
+}
+
+.ps-done-btn:hover {
+  border-color: var(--ice);
+  background: rgba(138, 180, 216, 0.06);
+}
+
+.ps-done-hint {
+  font-family: var(--font-organic);
+  font-size: 0.85rem;
+  color: var(--text-tertiary);
+  margin-top: 0.6em;
+}
+
+/* === COMPLETE === */
+.ps-complete {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+  pointer-events: none;
+}
+
+.ps-complete-text {
+  font-family: var(--font-display);
+  font-size: clamp(1.1rem, 2.5vw, 1.4rem);
+  font-weight: 300;
+  font-style: italic;
+  color: var(--text-secondary);
+  text-align: center;
+  line-height: 2;
+  animation: breatheIn 2.5s ease forwards;
+}
+
+@media (max-width: 768px) {
+  .ps-word { font-size: 0.88rem; padding: 0.5em 1em; }
+  .ps-done-area { bottom: 1.5rem; }
+  .ps-done-btn { font-size: 0.85rem; padding: 0.7em 2em; }
+}

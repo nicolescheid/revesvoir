@@ -1,0 +1,238 @@
+/* === TIMED WRITE — Exercise Three === */
+
+.timed-write {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tw-loading {
+  font-family: var(--font-organic);
+  font-size: 1rem;
+  color: var(--text-tertiary);
+  animation: gentlePulse 2s ease-in-out infinite;
+}
+
+/* === INTRO === */
+.tw-intro {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  max-width: 580px;
+  padding: 2rem;
+  opacity: 0;
+  transition: opacity 2s var(--ease-out-expo);
+}
+
+.tw-intro.visible { opacity: 1; }
+
+.tw-intro-title {
+  font-family: var(--font-display);
+  font-size: clamp(1.4rem, 3vw, 2rem);
+  font-weight: 300;
+  letter-spacing: 0.15em;
+  color: var(--text-primary);
+  margin-bottom: 0.3em;
+}
+
+.tw-intro-subtitle {
+  font-family: var(--font-display);
+  font-size: clamp(0.85rem, 1.5vw, 0.95rem);
+  font-weight: 300;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  margin-bottom: 2em;
+}
+
+.tw-intro-body { max-width: 480px; }
+
+.tw-intro-line {
+  font-family: var(--font-display);
+  font-size: clamp(0.95rem, 2vw, 1.1rem);
+  font-weight: 300;
+  color: var(--text-secondary);
+  line-height: 2;
+  opacity: 0;
+  animation: breatheIn 1.5s ease forwards;
+}
+
+.tw-prompt-preview {
+  margin: 2.5em 0;
+  padding: 1.5em 2em;
+  background: var(--glass);
+  border: 1px solid var(--ember-faint);
+  border-radius: var(--radius-lg);
+  backdrop-filter: blur(8px);
+  opacity: 0;
+  animation: breatheIn 2s ease forwards 3.5s;
+}
+
+.tw-prompt-text {
+  font-family: var(--font-display);
+  font-size: clamp(1.05rem, 2vw, 1.2rem);
+  font-weight: 300;
+  font-style: italic;
+  color: var(--ember-soft);
+  line-height: 1.8;
+}
+
+/* === COUNTDOWN === */
+.tw-countdown {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tw-countdown-number {
+  font-family: var(--font-display);
+  font-size: clamp(4rem, 10vw, 8rem);
+  font-weight: 300;
+  color: var(--text-primary);
+  animation: countdownPulse 0.9s ease forwards;
+  text-shadow: 0 0 60px rgba(140, 180, 220, 0.2);
+}
+
+@keyframes countdownPulse {
+  0% { opacity: 0; transform: scale(1.3); }
+  30% { opacity: 1; }
+  100% { opacity: 0.3; transform: scale(0.95); }
+}
+
+/* === WRITING === */
+.tw-writing {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 2rem;
+}
+
+.tw-timer {
+  position: fixed;
+  top: 1.8rem;
+  right: 2.2rem;
+  font-family: var(--font-organic);
+  font-size: 1.4rem;
+  color: var(--text-tertiary);
+  z-index: 20;
+  transition: color 0.5s ease;
+}
+
+.tw-timer.urgent {
+  color: var(--danger);
+  animation: gentlePulse 1s ease-in-out infinite;
+}
+
+/* === PROMPT AREA — nudges swap into this space === */
+.tw-prompt-area {
+  position: relative;
+  min-height: 2.5em;
+  margin: 0 auto 1em;
+  max-width: 500px;
+  text-align: center;
+}
+
+.tw-prompt-reminder {
+  font-family: var(--font-display);
+  font-size: 0.92rem;
+  font-weight: 300;
+  font-style: italic;
+  color: var(--ember-soft);
+  padding: 0.5em 1em;
+  opacity: 0.5;
+  transition: opacity 0.8s ease;
+}
+
+.tw-prompt-reminder.nudge-hidden {
+  opacity: 0;
+  position: absolute;
+  pointer-events: none;
+}
+
+/* Nudge appears exactly where the prompt was */
+.tw-nudge {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 300;
+  font-style: italic;
+  color: var(--ember-bright);
+  padding: 0.5em 1em;
+  animation: nudgeFadeIn 1.2s ease forwards;
+  transition: opacity 1.5s ease;
+}
+
+.tw-nudge.fading {
+  opacity: 0;
+}
+
+@keyframes nudgeFadeIn {
+  0% { opacity: 0; }
+  100% { opacity: 0.8; }
+}
+
+.tw-textarea {
+  flex: 1;
+  width: 100%;
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 1.5em 2em;
+  background: rgba(8, 14, 28, 0.6);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 300;
+  line-height: 1.9;
+  resize: none;
+  outline: none;
+  backdrop-filter: blur(10px);
+  transition: border-color 0.4s ease;
+}
+
+.tw-textarea::placeholder { color: var(--text-faint); font-style: italic; }
+.tw-textarea:focus { border-color: rgba(138, 180, 216, 0.3); }
+
+.tw-wordcount {
+  text-align: center;
+  font-family: var(--font-organic);
+  font-size: 0.9rem;
+  color: var(--text-faint);
+  padding-top: 0.8em;
+}
+
+/* === COMPLETE === */
+.tw-complete {
+  text-align: center;
+  animation: breatheIn 2.5s ease forwards;
+}
+
+.tw-complete-text {
+  font-family: var(--font-display);
+  font-size: clamp(1.2rem, 3vw, 1.6rem);
+  font-weight: 300;
+  font-style: italic;
+  color: var(--text-primary);
+  margin-bottom: 0.8em;
+}
+
+.tw-complete-sub {
+  font-family: var(--font-display);
+  font-size: clamp(0.92rem, 2vw, 1.05rem);
+  font-weight: 300;
+  color: var(--text-secondary);
+  line-height: 2;
+  opacity: 0;
+  animation: breatheIn 2s ease forwards 1.5s;
+}
+
+@media (max-width: 768px) {
+  .tw-writing { padding: 1rem; }
+  .tw-timer { top: 1rem; right: 1.2rem; font-size: 1.2rem; }
+  .tw-textarea { font-size: 1rem; padding: 1em 1.2em; }
+}

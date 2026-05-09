@@ -32,7 +32,7 @@ const ALLOWED_ORIGINS = [
   'http://127.0.0.1:5173',
 ];
 
-const CLAUDE_MODEL = 'claude-sonnet-4-20250514';
+const CLAUDE_MODEL = 'claude-sonnet-4-6';
 const CLAUDE_API = 'https://api.anthropic.com/v1/messages';
 
 // === CORS ===

@@ -32,7 +32,7 @@ const ALLOWED_ORIGINS = [
   'http://127.0.0.1:5173',
 ];
 
-const CLAUDE_MODEL = 'claude-sonnet-4-20250514';
+const CLAUDE_MODEL = 'claude-sonnet-5';
 const CLAUDE_API = 'https://api.anthropic.com/v1/messages';
 
 // === CORS ===
@@ -69,6 +69,7 @@ async function callClaude(env, systemPrompt, userMessage, maxTokens = 256) {
     body: JSON.stringify({
       model: CLAUDE_MODEL,
       max_tokens: maxTokens,
+      thinking: { type: 'disabled' },
       system: systemPrompt,
       messages: [{ role: 'user', content: userMessage }],
     }),

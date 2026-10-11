@@ -758,6 +758,24 @@ export default {
       });
     }
 
+    // Only our own pages may POST. CORS headers alone don't stop scripts that
+    // call the Worker directly (they ignore CORS); browsers always send an
+    // Origin header on a POST, so anything without an allowed one is refused
+    // before it can reach Claude or KV.
+    if (request.method === 'POST' && !ALLOWED_ORIGINS.includes(request.headers.get('Origin'))) {
+      return corsResponse(request, { error: 'Forbidden' }, 403);
+    }
+
+    // Optional per-IP cap, active once a rate-limit binding named LIMITER is
+    // added to this Worker (see README > Deploy). No-op until then.
+    if (request.method === 'POST' && env.LIMITER) {
+      const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+      const { success } = await env.LIMITER.limit({ key: ip });
+      if (!success) {
+        return corsResponse(request, { error: 'Too many requests. Please slow down.' }, 429);
+      }
+    }
+
     // Route requests
     try {
       if (request.method === 'POST') {

@@ -41,6 +41,9 @@ The frontend talks to the deployed Worker at `revesvoir-api.nicole-scheid.worker
 
 - **Frontend** — `npm run build` produces `dist/`, which is deployed to Cloudflare Pages.
 - **Worker** — `wrangler deploy worker.js` (a `wrangler.toml` is not yet committed; the deploy uses CLI flags).
+- **Bot protection** — the Worker refuses POSTs whose `Origin` isn't in `ALLOWED_ORIGINS`. A per-IP rate limit switches on when the Worker has a rate-limit binding named `LIMITER`, which needs a wrangler config, e.g. in `wrangler.jsonc`:
+  `"ratelimits": [{ "name": "LIMITER", "namespace_id": "1006", "simple": { "limit": 20, "period": 60 } }]`.
+  That config must also list the `SHORE_MESSAGES` KV binding (with its namespace id), or a deploy will drop it.
 
 ## Repository layout
 

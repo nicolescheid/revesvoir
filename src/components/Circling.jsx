@@ -3,14 +3,14 @@
 // "Is there something specific you're circling?"
 // ============================================================
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useWater } from './WaterCanvas';
 import { useSession } from '../contexts/SessionContext';
 import './Circling.css';
 
-export default function Circling({ onComplete }) {
+export default function Circling({ onComplete, onCrisis }) {
   const waterRef = useWater();
-  const { dispatch } = useSession();
+  const { dispatch, checkCrisis } = useSession();
   const [mode, setMode] = useState('ask'); // ask | typing | finding
   const [text, setText] = useState('');
   const [visible, setVisible] = useState(false);
@@ -49,16 +49,24 @@ export default function Circling({ onComplete }) {
     }, 2500);
   }, [dispatch, onComplete]);
 
+  const submittedRef = useRef(false);
+
   const handleSubmit = useCallback(() => {
-    if (!text.trim()) return;
+    if (!text.trim() || submittedRef.current) return;
+    submittedRef.current = true;
     const water = waterRef?.current;
     if (water) water.createRippleCascade(window.innerWidth * 0.5, window.innerHeight * 0.5, 0.8);
 
-    dispatch({ type: 'SET_CIRCLING', payload: text.trim() });
+    const named = text.trim();
+    dispatch({ type: 'SET_CIRCLING', payload: named });
 
-    // Brief transition
-    setTimeout(() => onComplete(), 1500);
-  }, [text, dispatch, onComplete]);
+    // The crisis check runs during the brief transition; both must finish before moving on.
+    const pause = new Promise(resolve => setTimeout(resolve, 1500));
+    Promise.all([checkCrisis(named), pause]).then(([crisis]) => {
+      if (crisis && onCrisis) onCrisis();
+      else onComplete();
+    });
+  }, [text, dispatch, onComplete, onCrisis, checkCrisis]);
 
   const handleKeyDown = useCallback((e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -86,6 +94,10 @@ export default function Circling({ onComplete }) {
               I'm not sure — help me find it
             </button>
           </div>
+          <p className="circling-care">
+            Rêvesvoir is an experiment in exploration. It works best when you're
+            feeling settled, and it can't support you through a crisis.
+          </p>
         </div>
       )}
 

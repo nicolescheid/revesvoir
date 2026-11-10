@@ -1,0 +1,32 @@
+# Rêvesvoir API Worker. Deploy: npx wrangler deploy (from C:\dev\revesvoir, level with origin).
+# The frontend is a separate Pages project, "revesvoir" (direct upload of dist/).
+name = "revesvoir-api"
+main = "worker.js"
+account_id = "413cb81347f3e89932f12e3ed9a6d062" # Nicole's account
+compatibility_date = "2026-11-01"
+workers_dev = true
+
+[observability]
+enabled = true
+
+[[kv_namespaces]]
+binding = "SHORE_MESSAGES"
+id = "1a400e818a1b4fdc9bb95a34fb7b2aff"
+
+# Per-IP limits, per Cloudflare location (approximate by design).
+# A full session makes about 15 to 17 Claude calls over 10+ minutes, with short bursts in Word Weaving.
+[[ratelimits]]
+name = "LLM_LIMITER"
+namespace_id = "4201"
+
+  [ratelimits.simple]
+  limit = 20
+  period = 60
+
+[[ratelimits]]
+name = "SHORE_LIMITER"
+namespace_id = "4202"
+
+  [ratelimits.simple]
+  limit = 3
+  period = 60

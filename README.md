@@ -21,7 +21,7 @@ Every session also drops a **Message in a Bottle** onto a shared shore. Future v
 ## Stack
 
 - **Frontend** — Vite + React 18, no UI framework. Animations are SVG + Canvas + CSS keyframes; the persistent water layer underneath is a hand-rolled WebGL system.
-- **Backend** — a single [Cloudflare Worker](worker.js) at `revesvoir-api.nicole-scheid.workers.dev`. It proxies the Anthropic Claude API for the exercise endpoints (`/emerge`, `/analyze`, `/write-prompt`, `/synthesize`, `/sentence-stems`, `/deep-synthesize`) and stores Shore bottles in a KV namespace.
+- **Backend** — a single [Cloudflare Worker](worker.js) at `revesvoir-api.nicole-scheid.workers.dev`. It proxies the Anthropic Claude API for the exercise endpoints (`/emerge`, `/write-prompt`, `/synthesize`, `/sentence-stems`, `/deep-synthesize`), behind an Origin check, input caps and per-IP rate limits, and stores Shore bottles in a KV namespace.
 - **Persistence** — session state is held in a React reducer and mirrored to `localStorage` so a refresh resumes mid-session.
 
 The frontend has no auth and no per-user storage; everything except the Shore bottles lives only in the user's browser.
@@ -40,7 +40,7 @@ The frontend talks to the deployed Worker at `revesvoir-api.nicole-scheid.worker
 ## Deploy
 
 - **Frontend** — `npm run build` produces `dist/`, which is deployed to Cloudflare Pages.
-- **Worker** — `wrangler deploy worker.js` (a `wrangler.toml` is not yet committed; the deploy uses CLI flags).
+- **Worker** — `npx wrangler deploy` from the repo root, using `wrangler.toml` (account pinned, KV and rate-limit bindings). Deploy only from a checkout level with `origin/main`.
 
 ## Repository layout
 

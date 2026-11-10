@@ -1,25 +1,12 @@
-// ╔══════════════════════════════════════════════════════════════╗
-// ║  REVESVOIR API — Cloudflare Worker                         ║
-// ║  https://revesvoir-api.nicole-scheid.workers.dev            ║
-// ║                                                             ║
-// ║  Existing Endpoints:                                        ║
-// ║    POST /observe  — ambient observations (Sonnet, 256 tok)  ║
-// ║    POST /distill  — full synthesis (Sonnet, 1024 tok)       ║
-// ║    POST /threads  — semantic thread detection (Sonnet, 512) ║
-// ║    POST /shore/messages — list messages from KV             ║
-// ║    POST /shore/post     — write message to KV               ║
-// ║                                                             ║
-// ║  New Endpoints (v0.7 Exercise Flow):                        ║
-// ║    POST /emerge       — generate emergent word from pair    ║
-// ║    POST /analyze      — analyze completed exercise          ║
-// ║    POST /write-prompt — generate timed write prompt         ║
-// ║    POST /synthesize   — final synthesis across all exercises║
-// ║                                                             ║
-// ║  Secrets: ANTHROPIC_API_KEY                                 ║
-// ║  KV Namespace: SHORE_MESSAGES                               ║
-// ║                                                             ║
-// ║  v0.7.0 — Added exercise flow endpoints                    ║
-// ╚══════════════════════════════════════════════════════════════╝
+// Rêvesvoir API: Cloudflare Worker (revesvoir-api)
+// Config, bindings and account: wrangler.toml. Secret: ANTHROPIC_API_KEY.
+//
+// POST /emerge /write-prompt /synthesize /sentence-stems /deep-synthesize  (Claude)
+// POST /shore/post, GET|POST /shore/messages                               (KV SHORE_MESSAGES)
+//
+// Guards (2026-11-10): allowed Origin required on POST, JSON body <= 32 KB,
+// strings and arrays capped, per-IP rate limits (LLM_LIMITER, SHORE_LIMITER),
+// 30 s upstream timeout, generic error messages (details go to the Worker log).
 
 const ALLOWED_ORIGINS = [
   'https://revesvoir.com',
@@ -34,6 +21,59 @@ const ALLOWED_ORIGINS = [
 
 const CLAUDE_MODEL = 'claude-sonnet-5';
 const CLAUDE_API = 'https://api.anthropic.com/v1/messages';
+
+const MAX_BODY_BYTES = 32 * 1024;
+const MAX_STRING = 8000;
+const MAX_ARRAY = 60;
+const MAX_DEPTH = 6;
+const CLAUDE_TIMEOUT_MS = 30000;
+
+// Trim every string and array in the request body so no field can grow a prompt without bound.
+function capInput(value, depth = 0) {
+  if (typeof value === 'string') return value.slice(0, MAX_STRING);
+  if (depth >= MAX_DEPTH) return null;
+  if (Array.isArray(value)) return value.slice(0, MAX_ARRAY).map(v => capInput(v, depth + 1));
+  if (value && typeof value === 'object') {
+    const out = {};
+    for (const [k, v] of Object.entries(value).slice(0, MAX_ARRAY)) out[k] = capInput(v, depth + 1);
+    return out;
+  }
+  return value;
+}
+
+async function readBody(request) {
+  const declared = Number(request.headers.get('Content-Length') || 0);
+  if (declared > MAX_BODY_BYTES) return { error: 'Request too large', status: 413 };
+  const text = await request.text();
+  if (text.length > MAX_BODY_BYTES) return { error: 'Request too large', status: 413 };
+  try {
+    const parsed = text ? JSON.parse(text) : {};
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      return { error: 'Invalid request', status: 400 };
+    }
+    return { body: capInput(parsed) };
+  } catch {
+    return { error: 'Invalid request', status: 400 };
+  }
+}
+
+// Log the detail, return a generic message. Upstream error text never reaches the caller.
+function failure(request, err, label = 'request') {
+  console.error(`[${label}]`, err && err.message ? err.message : err);
+  return corsResponse(request, { error: 'Something went quiet. Please try again.' }, 502);
+}
+
+async function underLimit(limiter, request, scope) {
+  if (!limiter) return true; // binding missing (e.g. misconfigured local run): fail open, logged
+  const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+  try {
+    const { success } = await limiter.limit({ key: `${scope}:${ip}` });
+    return success;
+  } catch (err) {
+    console.error('[ratelimit]', err.message);
+    return true;
+  }
+}
 
 // === CORS ===
 function corsHeaders(request) {
@@ -61,6 +101,7 @@ function corsResponse(request, body, status = 200) {
 async function callClaude(env, systemPrompt, userMessage, maxTokens = 256) {
   const response = await fetch(CLAUDE_API, {
     method: 'POST',
+    signal: AbortSignal.timeout(CLAUDE_TIMEOUT_MS),
     headers: {
       'Content-Type': 'application/json',
       'x-api-key': env.ANTHROPIC_API_KEY,
@@ -81,7 +122,9 @@ async function callClaude(env, systemPrompt, userMessage, maxTokens = 256) {
   }
 
   const data = await response.json();
-  return data.content[0].text;
+  const block = (data.content || []).find(b => b.type === 'text');
+  if (!block) throw new Error(`No text block (stop_reason ${data.stop_reason})`);
+  return block.text;
 }
 
 
@@ -90,8 +133,8 @@ async function callClaude(env, systemPrompt, userMessage, maxTokens = 256) {
 // ════════════════════════════════════════════════════════
 
 // === /emerge — Generate an emergent word from a linked pair ===
-async function handleEmerge(request, env) {
-  const { wordA, wordB, circling, existingWords } = await request.json();
+async function handleEmerge(request, env, body) {
+  const { wordA, wordB, circling, existingWords } = body;
 
   if (!wordA || !wordB) {
     return corsResponse(request, { error: 'Need wordA and wordB' }, 400);
@@ -127,73 +170,13 @@ Rules:
     const word = raw.trim().split(/\s+/)[0].replace(/[^a-zA-ZÀ-ÿ'-]/g, '').toLowerCase();
     return corsResponse(request, { word: word || 'resonance' });
   } catch (err) {
-    return corsResponse(request, { error: err.message }, 500);
-  }
-}
-
-// === /analyze — Analyze a completed exercise ===
-async function handleAnalyze(request, env) {
-  const { exerciseType, data, circling, previousExercises, patterns } = await request.json();
-
-  if (!exerciseType || !data) {
-    return corsResponse(request, { error: 'Need exerciseType and data' }, 400);
-  }
-
-  const systemPrompt = `You are the analytical layer of Rêvesvoir — reading patterns in what the unconscious has produced.
-
-You've just received data from a completed exercise. Your task: extract the psychological signal from the noise. What patterns, themes, emotional currents, and tensions are present?
-
-Return ONLY valid JSON with this structure:
-{
-  "themes": ["theme1", "theme2", "theme3"],
-  "emotionalValence": "a brief phrase describing the dominant emotional direction",
-  "tension": "what's being pushed toward vs pulled away from",
-  "keyInsight": "the single most interesting pattern you noticed",
-  "confidence": 0.1 to 0.9
-}
-
-Rules:
-- Be specific, not generic. "fear of being seen" not "anxiety".
-- Look for what's conspicuously ABSENT as much as what's present.
-- If there's a stated concern, note whether the exercise data aligns with it or diverges.
-- Build on patterns from previous exercises if available.
-- The themes should be things a person might not have noticed about themselves.`;
-
-  let userMessage = `EXERCISE: ${exerciseType}\n\nDATA:\n${JSON.stringify(data, null, 2)}`;
-
-  if (circling) {
-    userMessage += `\n\nSTATED CONCERN: "${circling}"`;
-  }
-
-  if (previousExercises && previousExercises.length > 0) {
-    userMessage += '\n\nPREVIOUS EXERCISES:';
-    for (const ex of previousExercises) {
-      userMessage += `\n- ${ex.type}: themes=${JSON.stringify(ex.analysis?.themes || [])}`;
-    }
-  }
-
-  if (patterns && patterns.themes && patterns.themes.length > 0) {
-    userMessage += `\n\nRUNNING PATTERNS: ${JSON.stringify(patterns)}`;
-  }
-
-  userMessage += '\n\nAnalyze. Return ONLY valid JSON.';
-
-  try {
-    const raw = await callClaude(env, systemPrompt, userMessage, 512);
-    let cleaned = raw.trim();
-    if (cleaned.startsWith('```')) {
-      cleaned = cleaned.replace(/^```(?:json)?\s*/, '').replace(/\s*```$/, '');
-    }
-    const parsed = JSON.parse(cleaned);
-    return corsResponse(request, parsed);
-  } catch (err) {
-    return corsResponse(request, { error: err.message }, 500);
+    return failure(request, err);
   }
 }
 
 // === /write-prompt — Generate a prompt for the timed write ===
-async function handleWritePrompt(request, env) {
-  const { circling, exercises, patterns } = await request.json();
+async function handleWritePrompt(request, env, body) {
+  const { circling, exercises, patterns } = body;
 
   const systemPrompt = `You are the prompter of Rêvesvoir — creating a single writing prompt that will unlock what the unconscious is holding.
 
@@ -259,8 +242,8 @@ Rules:
 }
 
 // === /synthesize — Final synthesis across all exercises ===
-async function handleSynthesize(request, env) {
-  const { circling, exercises, patterns } = await request.json();
+async function handleSynthesize(request, env, body) {
+  const { circling, exercises, patterns } = body;
 
   if (!exercises || exercises.length === 0) {
     return corsResponse(request, { error: 'Need exercise data' }, 400);
@@ -373,7 +356,7 @@ Rules:
       fullText: parsed.fullText || null,
     });
   } catch (err) {
-    return corsResponse(request, { error: err.message }, 500);
+    return failure(request, err);
   }
 }
 
@@ -383,8 +366,8 @@ Rules:
 // ════════════════════════════════════════════════════════
 
 // === /sentence-stems — Generate sentence completion stems ===
-async function handleSentenceStems(request, env) {
-  const { circling, exercises, patterns, synthesis } = await request.json();
+async function handleSentenceStems(request, env, body) {
+  const { circling, exercises, patterns, synthesis } = body;
 
   const systemPrompt = `You are the probing voice of Rêvesvoir — the question that won't let go.
 
@@ -432,14 +415,14 @@ Return ONLY valid JSON: { "stems": ["stem1...", "stem2...", ...] }`;
 
     return corsResponse(request, { stems: parsed.stems });
   } catch (err) {
-    return corsResponse(request, { error: err.message }, 500);
+    return failure(request, err);
   }
 }
 
 
 // === /deep-synthesize — Second synthesis after "go deeper" exercises ===
-async function handleDeepSynthesize(request, env) {
-  const { circling, exercises, patterns, synthesis, deepExercises } = await request.json();
+async function handleDeepSynthesize(request, env, body) {
+  const { circling, exercises, patterns, synthesis, deepExercises } = body;
 
   const systemPrompt = `You are the deepest layer of Rêvesvoir — below where the first synthesis reached.
 
@@ -523,179 +506,10 @@ Rules:
       closing: parsed.closing || null,
     });
   } catch (err) {
-    return corsResponse(request, { error: err.message }, 500);
+    return failure(request, err);
   }
 }
 
-
-// ════════════════════════════════════════════════════════
-// EXISTING ENDPOINTS (v0.5)
-// ════════════════════════════════════════════════════════
-
-// === OBSERVE ENDPOINT ===
-async function handleObserve(request, env) {
-  const { seed, fragments, previousObservations } = await request.json();
-
-  if (!seed || !fragments || fragments.length === 0) {
-    return corsResponse(request, { error: 'Need seed and fragments' }, 400);
-  }
-
-  const systemPrompt = `You are the voice of Revesvoir — a tidal pool where unconscious patterns surface.
-
-Your role is to offer ONE gentle, tentative observation about connections between what the user has deposited. You are reflective and wondering, never analytical or declarative.
-
-Rules:
-- Speak as if noticing something emerging from water — "I notice...", "There seems to be...", "Something connects..."
-- Never give advice, analysis, or conclusions
-- Never use bullet points or lists
-- Keep to 1-2 sentences maximum
-- If previous observations got "This resonates" or the flinch response, go deeper in that direction
-- If previous observations got "Not quite", try a completely different angle
-- Reference specific fragments by their content, not by labels
-- The tone is dusk — quiet, unhurried, wondering`;
-
-  let userMessage = `THE SEED (what they can't stop thinking about):\n"${seed}"\n\nFRAGMENTS DEPOSITED:`;
-  for (const f of fragments) {
-    const label = f.typeLabel ? ` [${f.typeLabel}]` : '';
-    userMessage += `\n·${label} "${f.text}"`;
-  }
-
-  if (previousObservations && previousObservations.length > 0) {
-    userMessage += '\n\nPREVIOUS OBSERVATIONS AND RESPONSES:';
-    for (const o of previousObservations) {
-      userMessage += `\n· Observation: "${o.text}" → Response: "${o.response}"`;
-    }
-  }
-
-  userMessage += '\n\nOffer one gentle observation about what might connect these fragments to each other or to the seed.';
-
-  try {
-    const text = await callClaude(env, systemPrompt, userMessage, 256);
-    return corsResponse(request, { text });
-  } catch (err) {
-    return corsResponse(request, { error: err.message }, 500);
-  }
-}
-
-// === DISTILL ENDPOINT ===
-async function handleDistill(request, env) {
-  const { seed, fragments, previousObservations } = await request.json();
-
-  if (!seed || !fragments || fragments.length === 0) {
-    return corsResponse(request, { error: 'Need seed and fragments' }, 400);
-  }
-
-  const systemPrompt = `You are the deep voice of Revesvoir — surfacing what the unconscious already knows.
-
-The user has deposited a seed (something they can't stop thinking about) and multiple fragments (songs, images, conversations, readings, dreams, impulses, and freeform thoughts). Your task is to synthesise what might be trying to emerge from this collection.
-
-Rules:
-- Write 2-4 paragraphs of reflective, wondering prose
-- Never be declarative — use "perhaps", "it seems", "what if", "there's a quality of..."
-- Name specific connections between fragments
-- Connect back to the seed — what are all these things orbiting?
-- The insight should feel like something the person already knew but hadn't articulated
-- Avoid therapeutic language, advice, or action items
-- Write as if speaking quietly in a dark room near water
-- If observations got flinch responses ("Something's there but I can't grasp it yet"), lean into what those observations were circling`;
-
-  let userMessage = `THE SEED:\n"${seed}"\n\nFRAGMENTS:`;
-  for (const f of fragments) {
-    const label = f.typeLabel ? ` [${f.typeLabel}]` : '';
-    userMessage += `\n·${label} "${f.text}"`;
-  }
-
-  if (previousObservations && previousObservations.length > 0) {
-    userMessage += '\n\nOBSERVATION HISTORY (what surfaced and how they responded):';
-    for (const o of previousObservations) {
-      userMessage += `\n· "${o.text}" → ${o.response}`;
-    }
-  }
-
-  userMessage += '\n\nSynthesise what might be trying to surface from this collection. What is the single thing all of these fragments are circling?';
-
-  try {
-    const text = await callClaude(env, systemPrompt, userMessage, 1024);
-    return corsResponse(request, { text });
-  } catch (err) {
-    return corsResponse(request, { error: err.message }, 500);
-  }
-}
-
-// === THREADS ENDPOINT ===
-async function handleThreads(request, env) {
-  const { seed, fragments } = await request.json();
-
-  if (!seed || !fragments || fragments.length < 4) {
-    return corsResponse(request, { threads: [] });
-  }
-
-  const systemPrompt = `You detect hidden thematic, emotional, and conceptual connections between fragments of thought.
-
-You are given a seed (something the person can't stop thinking about) and a collection of fragments they deposited — songs, images, conversations, readings, dreams, impulses, and freeform thoughts.
-
-Your task: identify pairs of fragments that resonate with each other at a level DEEPER than shared words. Look for:
-- Thematic echoes (both about loss, both about becoming, both about permission)
-- Emotional resonance (both carry grief, both carry excitement, both carry ambivalence)
-- Structural parallels (both describe a threshold, both describe something breaking open)
-- Complementary tension (one is about holding on while another is about letting go)
-- Shared relationship to the seed (both approach the seed's question from the same unconscious angle)
-
-Also identify fragments that connect to the seed in ways that aren't obvious from the words alone.
-
-Respond ONLY with valid JSON. No markdown, no backticks, no explanation. The format:
-
-{"threads":[{"from":1,"to":3,"strength":0.4,"type":"frag","why":"brief reason"},{"from":"seed","to":5,"strength":0.3,"type":"seed","why":"brief reason"}]}
-
-Rules:
-- "from" and "to" are fragment IDs (integers), or "seed" for seed connections
-- "strength" is 0.1 to 0.8 (how strong the resonance is)
-- "type" is "frag" for fragment-to-fragment, "seed" for seed-to-fragment
-- "why" is a 3-8 word description of the connection (for potential future display)
-- Return 3-8 connections maximum — only the meaningful ones
-- Do NOT identify connections based on shared words — that's already handled client-side
-- Focus on the connections that word overlap would MISS`;
-
-  let userMessage = `SEED: "${seed}"\n\nFRAGMENTS:`;
-  for (const f of fragments) {
-    const label = f.typeLabel ? ` [${f.typeLabel}]` : '';
-    userMessage += `\n  id=${f.id}${label}: "${f.text}"`;
-  }
-
-  userMessage += '\n\nIdentify the hidden thematic and emotional connections. Return ONLY valid JSON.';
-
-  try {
-    const raw = await callClaude(env, systemPrompt, userMessage, 512);
-
-    let cleaned = raw.trim();
-    if (cleaned.startsWith('```')) {
-      cleaned = cleaned.replace(/^```(?:json)?\s*/, '').replace(/\s*```$/, '');
-    }
-
-    const parsed = JSON.parse(cleaned);
-
-    const validThreads = (parsed.threads || [])
-      .filter(t => {
-        const validFrom = t.from === 'seed' || fragments.some(f => f.id === t.from);
-        const validTo = t.to === 'seed' || fragments.some(f => f.id === t.to);
-        return validFrom && validTo && t.from !== t.to;
-      })
-      .map(t => ({
-        from: t.from,
-        to: t.to,
-        strength: Math.max(0.1, Math.min(0.8, t.strength || 0.3)),
-        type: t.type === 'seed' ? 'seed' : 'frag',
-        why: (t.why || '').slice(0, 80),
-        semantic: true,
-      }))
-      .slice(0, 8);
-
-    return corsResponse(request, { threads: validThreads });
-  } catch (err) {
-    console.log('Thread detection failed:', err.message);
-    return corsResponse(request, { threads: [] });
-  }
-}
 
 // === SHORE ENDPOINTS ===
 async function handleShoreMessages(request, env) {
@@ -703,7 +517,7 @@ async function handleShoreMessages(request, env) {
     const list = await env.SHORE_MESSAGES.list({ prefix: 'msg:' });
     const messages = [];
 
-    for (const key of list.keys) {
+    for (const key of list.keys.slice(-50)) {
       const val = await env.SHORE_MESSAGES.get(key.name, 'json');
       if (val) messages.push(val);
     }
@@ -712,14 +526,15 @@ async function handleShoreMessages(request, env) {
 
     return corsResponse(request, { messages });
   } catch (err) {
-    return corsResponse(request, { messages: [], error: err.message });
+    console.error('[shore list]', err.message);
+    return corsResponse(request, { messages: [] });
   }
 }
 
-async function handleShorePost(request, env) {
-  const { text, author, replyTo } = await request.json();
+async function handleShorePost(request, env, body) {
+  const { text, author, replyTo } = body;
 
-  if (!text || text.trim().length === 0) {
+  if (typeof text !== 'string' || text.trim().length === 0) {
     return corsResponse(request, { error: 'Message required' }, 400);
   }
 
@@ -731,77 +546,75 @@ async function handleShorePost(request, env) {
   const message = {
     id,
     text: text.trim().slice(0, 500),
-    author: (author || 'anonymous').trim().slice(0, 40),
+    author: (typeof author === 'string' && author.trim() ? author : 'anonymous').trim().slice(0, 40),
     timestamp: Date.now(),
-    replyTo: replyTo || null,
+    replyTo: typeof replyTo === 'string' && /^[0-9a-z-]{1,40}$/.test(replyTo) ? replyTo : null,
   };
 
   try {
     await env.SHORE_MESSAGES.put(`msg:${id}`, JSON.stringify(message));
     return corsResponse(request, { ok: true, id });
   } catch (err) {
-    return corsResponse(request, { error: err.message }, 500);
+    return failure(request, err);
   }
 }
 
 // === ROUTER ===
+const LLM_ROUTES = {
+  '/emerge': handleEmerge,
+  '/write-prompt': handleWritePrompt,
+  '/synthesize': handleSynthesize,
+  '/sentence-stems': handleSentenceStems,
+  '/deep-synthesize': handleDeepSynthesize,
+};
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     const path = url.pathname;
 
-    // Handle CORS preflight
     if (request.method === 'OPTIONS') {
-      return new Response(null, {
-        status: 204,
-        headers: corsHeaders(request),
-      });
+      return new Response(null, { status: 204, headers: corsHeaders(request) });
     }
 
-    // Route requests
     try {
-      if (request.method === 'POST') {
-        switch (path) {
-          // v0.7 exercise flow
-          case '/emerge':
-            return await handleEmerge(request, env);
-          case '/analyze':
-            return await handleAnalyze(request, env);
-          case '/write-prompt':
-            return await handleWritePrompt(request, env);
-          case '/synthesize':
-            return await handleSynthesize(request, env);
-
-          // v0.8 deep dive
-          case '/sentence-stems':
-            return await handleSentenceStems(request, env);
-          case '/deep-synthesize':
-            return await handleDeepSynthesize(request, env);
-
-          // v0.5 existing
-          case '/observe':
-            return await handleObserve(request, env);
-          case '/distill':
-            return await handleDistill(request, env);
-          case '/threads':
-            return await handleThreads(request, env);
-          case '/shore/messages':
-            return await handleShoreMessages(request, env);
-          case '/shore/post':
-            return await handleShorePost(request, env);
-
-          default:
-            return corsResponse(request, { error: 'Not found' }, 404);
-        }
-      }
-
       if (request.method === 'GET' && path === '/shore/messages') {
         return await handleShoreMessages(request, env);
       }
 
-      return corsResponse(request, { error: 'Method not allowed' }, 405);
+      if (request.method !== 'POST') {
+        return corsResponse(request, { error: 'Method not allowed' }, 405);
+      }
+
+      const isLlm = Object.prototype.hasOwnProperty.call(LLM_ROUTES, path);
+      const isShore = path === '/shore/post' || path === '/shore/messages';
+      if (!isLlm && !isShore) {
+        return corsResponse(request, { error: 'Not found' }, 404);
+      }
+
+      // Browsers always send Origin on these cross-origin POSTs. Not proof against scripts,
+      // but it turns away casual reuse; the rate limits do the real work.
+      const origin = request.headers.get('Origin') || '';
+      if (!ALLOWED_ORIGINS.includes(origin)) {
+        return corsResponse(request, { error: 'Forbidden' }, 403);
+      }
+
+      if (path === '/shore/messages') {
+        return await handleShoreMessages(request, env);
+      }
+
+      const limiter = isLlm ? env.LLM_LIMITER : env.SHORE_LIMITER;
+      if (!(await underLimit(limiter, request, isLlm ? 'llm' : 'shore'))) {
+        return corsResponse(request, { error: 'Slow down a little, then try again.' }, 429);
+      }
+
+      const { body, error, status } = await readBody(request);
+      if (error) return corsResponse(request, { error }, status);
+
+      if (isLlm) return await LLM_ROUTES[path](request, env, body);
+      return await handleShorePost(request, env, body);
     } catch (err) {
-      return corsResponse(request, { error: 'Internal error: ' + err.message }, 500);
+      return failure(request, err, 'router');
     }
   },
 };

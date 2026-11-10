@@ -139,13 +139,18 @@ export function SessionProvider({ children }) {
   const sessionRef = useRef(session);
   sessionRef.current = session;
 
-  // Persist to localStorage on every change
+  // Persist to localStorage on every change. Once the saved session has been
+  // read, a session with no id (after RESET) removes the stored copy, so
+  // "End this session" and "Begin again" leave none of the visitor's writing behind.
+  const loadedRef = useRef(false);
   useEffect(() => {
-    if (session.id) {
-      try {
+    try {
+      if (session.id) {
         localStorage.setItem('revesvoir-session', JSON.stringify(session));
-      } catch (e) {}
-    }
+      } else if (loadedRef.current) {
+        localStorage.removeItem('revesvoir-session');
+      }
+    } catch (e) {}
   }, [session]);
 
   // Load on mount
@@ -159,6 +164,7 @@ export function SessionProvider({ children }) {
         }
       }
     } catch (e) {}
+    loadedRef.current = true;
   }, []);
 
   // === API HELPERS ===

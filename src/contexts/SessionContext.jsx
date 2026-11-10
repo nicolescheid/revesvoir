@@ -6,7 +6,7 @@
 
 import { createContext, useContext, useReducer, useCallback, useRef, useEffect } from 'react';
 
-const API_URL = 'https://revesvoir-api.nicole-scheid.workers.dev';
+import { API_URL } from '../config';
 
 // === SESSION SHAPE ===
 const initialSession = {
@@ -207,7 +207,8 @@ export function SessionProvider({ children }) {
 
       if (response.ok) {
         const result = await response.json();
-        dispatch({ type: 'SET_SYNTHESIS', payload: result });
+        // { crisis: true } comes back instead of a reflection; the caller shows the crisis screen.
+        if (!result.crisis) dispatch({ type: 'SET_SYNTHESIS', payload: result });
         return result;
       }
     } catch (err) {
@@ -307,9 +308,29 @@ export function SessionProvider({ children }) {
     return null;
   }, []);
 
+  // Ask the Worker whether what the visitor typed suggests a crisis.
+  // Any failure counts as "no": the syntheses check again later.
+  const checkCrisis = useCallback(async (text) => {
+    try {
+      const response = await fetch(`${API_URL}/check`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text }),
+      });
+      if (response.ok) {
+        const result = await response.json();
+        return result.crisis === true;
+      }
+    } catch (err) {
+      console.log('Check API unavailable:', err);
+    }
+    return false;
+  }, []);
+
   const value = {
     session,
     dispatch,
+    checkCrisis,
     analyzeExercise,
     generateSynthesis,
     generateDeepSynthesis,

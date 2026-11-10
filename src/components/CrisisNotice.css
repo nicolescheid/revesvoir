@@ -1,0 +1,74 @@
+.crisis-view {
+  position: fixed;
+  inset: 0;
+  z-index: 95;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow-y: auto;
+  padding: 2rem 1rem;
+  background: rgba(5, 10, 20, 0.6);
+}
+
+.crisis-inner {
+  max-width: 560px;
+  text-align: center;
+  margin: auto;
+}
+
+.crisis-heading {
+  font-family: var(--font-display);
+  font-size: clamp(1.4rem, 3vw, 1.8rem);
+  font-weight: 300;
+  font-style: italic;
+  color: var(--text-primary);
+  margin: 0 0 1.4em;
+  outline: none;
+}
+
+.crisis-body p {
+  font-family: var(--font-display);
+  font-size: clamp(1rem, 2.2vw, 1.15rem);
+  font-weight: 400;
+  line-height: 1.75;
+  color: var(--text-body);
+  margin: 0 0 1em;
+}
+
+.crisis-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.9rem;
+  margin-top: 2em;
+}
+
+.crisis-btn {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
+  background: none;
+  border: 1px solid var(--glass-border);
+  padding: 0.9em 2.5em;
+  cursor: pointer;
+  transition: border-color 0.4s ease, color 0.4s ease;
+}
+
+.crisis-btn:hover,
+.crisis-btn:focus-visible {
+  border-color: var(--glass-border-hover);
+  color: var(--text-primary);
+}
+
+.crisis-btn.primary {
+  color: var(--ice-bright);
+  border-color: rgba(138, 180, 216, 0.35);
+}
+
+.crisis-heading:focus,
+.crisis-heading:focus-visible {
+  outline: none;
+  box-shadow: none;
+  border: none;
+}

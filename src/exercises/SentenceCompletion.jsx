@@ -8,6 +8,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useWater } from '../components/WaterCanvas';
 import { useSession } from '../contexts/SessionContext';
 import { haptics } from '../systems/AudioSystem';
+import { API_URL } from '../config';
 import './SentenceCompletion.css';
 
 const FALLBACK_STEMS = [
@@ -38,7 +39,6 @@ export default function SentenceCompletion({ onComplete, audioSystem }) {
   useEffect(() => {
     async function loadStems() {
       try {
-        const API_URL = 'https://revesvoir-api.nicole-scheid.workers.dev';
         const res = await fetch(`${API_URL}/sentence-stems`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

@@ -14,13 +14,14 @@ import PileSort from './exercises/PileSort';
 import TimedWrite from './exercises/TimedWrite';
 import AmbiguityCards from './exercises/AmbiguityCards';
 import SentenceCompletion from './exercises/SentenceCompletion';
+import CrisisNotice from './components/CrisisNotice';
+import { API_URL } from './config';
 import { SessionProvider, useSession } from './contexts/SessionContext';
 import { AudioSystem, haptics } from './systems/AudioSystem';
 import './styles/global.css';
 import './App.css';
 
 const TOTAL_WEAVING_ROUNDS = 3;
-const API_BASE = 'https://revesvoir-api.nicole-scheid.workers.dev';
 
 function AppInner() {
   const { session, dispatch, generateSynthesis, generateDeepSynthesis } = useSession();
@@ -28,6 +29,7 @@ function AppInner() {
   const audioRef = useRef(null);
 
   const [view, setView] = useState('arrival');
+  const [crisisFrom, setCrisisFrom] = useState(null); // 'circling' | 'synthesis' | 'deep-synthesis'
   const [emergedWords, setEmergedWords] = useState([]);
   const [usedSeedWords, setUsedSeedWords] = useState([]);
   const [weavingRound, setWeavingRound] = useState(1);
@@ -112,6 +114,12 @@ function AppInner() {
     setSynthesisPage(0);
 
     const result = await generateSynthesis();
+    if (result?.crisis) {
+      setSynthesisLoading(false);
+      setCrisisFrom('synthesis');
+      setView('crisis');
+      return;
+    }
     setSynthesisData(result);
     setSynthesisLoading(false);
 
@@ -168,6 +176,12 @@ function AppInner() {
     setDeepSynthesisPage(0);
 
     const deepResult = await generateDeepSynthesis(allDeep);
+    if (deepResult?.crisis) {
+      setDeepSynthesisLoading(false);
+      setCrisisFrom('deep-synthesis');
+      setView('crisis');
+      return;
+    }
     setDeepSynthesisData(deepResult);
     setDeepSynthesisLoading(false);
 
@@ -191,7 +205,7 @@ function AppInner() {
 
     setBottleSending(true);
     try {
-      await fetch(`${API_BASE}/shore/post`, {
+      await fetch(`${API_URL}/shore/post`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -233,7 +247,20 @@ function AppInner() {
     setDeepExercises([]);
     setDeepSynthesisData(null);
     setDeepSynthesisPage(0);
+    setCrisisFrom(null);
   }, [dispatch]);
+
+  // Crisis screen: ending clears everything they wrote and closes quietly.
+  const handleCrisisEnd = useCallback(() => {
+    audioRef.current?.stopDrone?.();
+    handleNewSession();
+    setView('ended');
+  }, [handleNewSession]);
+
+  const handleCrisisBack = useCallback(() => {
+    setCrisisFrom(null);
+    setView('circling');
+  }, []);
 
   return (
     <>
@@ -243,7 +270,25 @@ function AppInner() {
       )}
 
       {view === 'circling' && (
-        <Circling onComplete={handleCirclingComplete} />
+        <Circling
+          onComplete={handleCirclingComplete}
+          onCrisis={() => { setCrisisFrom('circling'); setView('crisis'); }}
+        />
+      )}
+
+      {view === 'crisis' && (
+        <CrisisNotice
+          onEnd={handleCrisisEnd}
+          onBack={crisisFrom === 'circling' ? handleCrisisBack : null}
+        />
+      )}
+
+      {view === 'ended' && (
+        <div className="synthesis-view">
+          <div className="synthesis-fallback">
+            <p className="synthesis-fallback-text">Take care of yourself.</p>
+          </div>
+        </div>
       )}
 
       {view === 'exercise-word-weaving' && (
@@ -333,7 +378,7 @@ function AppInner() {
               {/* Page 0: The Question */}
               {synthesisPage >= 0 && (
                 <div className={`synthesis-section ${synthesisPage === 0 ? 'current' : 'revealed'}`}>
-                  <p className="synthesis-label">The question you're carrying:</p>
+                  <p className="synthesis-label">A question that may be underneath:</p>
                   <p className="synthesis-question">{synthesisData.question}</p>
                   {synthesisPage === 0 && (
                     <button className="synthesis-continue" onClick={handleSynthesisContinue}>
@@ -346,7 +391,7 @@ function AppInner() {
               {/* Page 1: The Answer */}
               {synthesisPage >= 1 && (
                 <div className={`synthesis-section ${synthesisPage === 1 ? 'current' : 'revealed'}`}>
-                  <p className="synthesis-label">What you already know about the answer:</p>
+                  <p className="synthesis-label">What your own words seem to say:</p>
                   <p className="synthesis-answer">{synthesisData.answer}</p>
                   {synthesisPage === 1 && (
                     <button className="synthesis-continue" onClick={handleSynthesisContinue}>
@@ -376,7 +421,7 @@ function AppInner() {
                       Would you like to go deeper?
                     </p>
                     <p className="choice-sub">
-                      Two more exercises can take you beneath what just surfaced.
+                      Two more exercises, if you'd like to keep exploring.
                     </p>
                     <div className="choice-buttons">
                       <button className="choice-btn choice-deeper" onClick={handleGoDeeper}>
@@ -471,7 +516,7 @@ function AppInner() {
               {/* Page 0: The Revelation */}
               {deepSynthesisPage >= 0 && (
                 <div className={`synthesis-section ${deepSynthesisPage === 0 ? 'current' : 'revealed'}`}>
-                  <p className="synthesis-label">Beneath the surface:</p>
+                  <p className="synthesis-label">Something the newer exercises may add:</p>
                   <p className="synthesis-question">{deepSynthesisData.revelation}</p>
                   {deepSynthesisPage === 0 && (
                     <button className="synthesis-continue" onClick={handleDeepSynthesisContinue}>
